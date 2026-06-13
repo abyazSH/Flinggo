@@ -1,122 +1,64 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { useState, useEffect } from "react";
+import Sidebar from "./components/Sidebar";
+import Topbar from "./components/Topbar";
+import Dashboard from "./pages/Dashboard";
+import {
+  ChatPage,
+  QuizPage,
+  SentencePage,
+  ChallengePage,
+  LeaderboardPage,
+  ProgressPage,
+  SettingsPage,
+} from "./pages/OtherPages";
 
-function App() {
-  const [count, setCount] = useState(0)
+const pageMeta = {
+  dashboard:   { title: "Dashboard",         subtitle: "Ringkasan aktivitas belajarmu" },
+  chat:        { title: "Chat AI",            subtitle: "Ngobrol dan terjemahkan dengan Flingo" },
+  quiz:        { title: "Kuis kosakata",      subtitle: "Latih kosakata dalam 5 bahasa" },
+  sentence:    { title: "Susun kalimat",      subtitle: "Pahami struktur kalimat secara interaktif" },
+  challenge:   { title: "Tantangan harian",   subtitle: "Selesaikan tantangan dan jaga streakmu" },
+  leaderboard: { title: "Leaderboard",        subtitle: "Peringkat pengguna minggu ini" },
+  progress:    { title: "Progres saya",       subtitle: "Analitik dan riwayat belajarmu" },
+  settings:    { title: "Pengaturan",         subtitle: "Kelola preferensi akun" },
+};
 
-  return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
-
-      <div className="ticks"></div>
-
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+function PageContent({ page }) {
+  switch (page) {
+    case "dashboard":   return <Dashboard />;
+    case "chat":        return <ChatPage />;
+    case "quiz":        return <QuizPage />;
+    case "sentence":    return <SentencePage />;
+    case "challenge":   return <ChallengePage />;
+    case "leaderboard": return <LeaderboardPage />;
+    case "progress":    return <ProgressPage />;
+    case "settings":    return <SettingsPage />;
+    default:            return <Dashboard />;
+  }
 }
 
-export default App
+export default function App() {
+  const [activePage, setActivePage] = useState("dashboard");
+  const [isDark, setIsDark] = useState(
+    () => localStorage.getItem("flingo-theme") === "dark"
+  );
+
+  useEffect(() => {
+    localStorage.setItem("flingo-theme", isDark ? "dark" : "light");
+  }, [isDark]);
+
+  const theme = isDark ? "flingo-dark" : "flingo";
+  const meta = pageMeta[activePage] || pageMeta.dashboard;
+
+  return (
+    <div data-theme={theme} className="flex h-screen overflow-hidden bg-base-200 transition-colors duration-300">
+      <Sidebar activePage={activePage} setActivePage={setActivePage} isDark={isDark} setIsDark={setIsDark} />
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Topbar title={meta.title} subtitle={meta.subtitle} isDark={isDark} setIsDark={setIsDark} />
+        <main className="flex-1 overflow-y-auto scrollbar-thin">
+          <PageContent page={activePage} />
+        </main>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,65 @@
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
+  theme: {
+    extend: {
+      colors: {
+        brand: {
+          50:  "#EEEDFE",
+          100: "#CECBF6",
+          200: "#AFA9EC",
+          400: "#7F77DD",
+          600: "#534AB7",
+          800: "#3C3489",
+          900: "#26215C",
+        },
+      },
+    },
+  },
+  plugins: [require("daisyui")],
+  daisyui: {
+    themes: [
+      {
+        flingo: {
+          primary:          "#534AB7",
+          "primary-content": "#EEEDFE",
+          secondary:         "#1D9E75",
+          "secondary-content":"#E1F5EE",
+          accent:            "#EF9F27",
+          "accent-content":  "#412402",
+          neutral:           "#2C2C2A",
+          "neutral-content": "#F1EFE8",
+          "base-100":        "#ffffff",
+          "base-200":        "#f5f5f7",
+          "base-300":        "#ebebed",
+          "base-content":    "#1a1a1a",
+          info:              "#378ADD",
+          success:           "#1D9E75",
+          warning:           "#EF9F27",
+          error:             "#E24B4A",
+        },
+        "flingo-dark": {
+          primary:          "#7F77DD",
+          "primary-content": "#EEEDFE",
+          secondary:         "#1D9E75",
+          "secondary-content":"#E1F5EE",
+          accent:            "#EF9F27",
+          "accent-content":  "#412402",
+          neutral:           "#AFA9EC",
+          "neutral-content": "#1a1a2e",
+          "base-100":        "#16162a",
+          "base-200":        "#1e1e35",
+          "base-300":        "#262640",
+          "base-content":    "#e8e6ff",
+          info:              "#378ADD",
+          success:           "#1D9E75",
+          warning:           "#EF9F27",
+          error:             "#E24B4A",
+        },
+      },
+      "light",
+      "dark",
+    ],
+    defaultTheme: "flingo",
+  },
+};
