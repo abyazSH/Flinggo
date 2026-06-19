@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 
@@ -28,10 +29,10 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-4 p-6 max-w-lg mx-auto">
-      <h1 className="text-lg font-semibold">⚙️ Settings</h1>
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="flex flex-col gap-4 p-6 max-w-lg mx-auto">
+      <motion.h1 initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="text-lg font-semibold">⚙️ Settings</motion.h1>
 
-      <div className="card bg-base-100 border border-base-300">
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="card bg-base-100 border border-base-300">
         <div className="card-body gap-4">
           <h3 className="card-title text-sm">Profile</h3>
 
@@ -66,20 +67,22 @@ export default function SettingsPage() {
             />
           </div>
 
-          {saved && (
-            <div className="alert alert-success text-sm py-2">
-              <span>Settings saved successfully!</span>
-            </div>
-          )}
+          <AnimatePresence>
+            {saved && (
+              <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="alert alert-success text-sm py-2">
+                <span>Settings saved successfully!</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-          <button className="btn btn-primary btn-sm w-fit" onClick={handleSave} disabled={saving}>
+          <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className="btn btn-primary btn-sm w-fit" onClick={handleSave} disabled={saving}>
             {saving ? <span className="loading loading-spinner loading-xs" /> : "Save Changes"}
-          </button>
+          </motion.button>
         </div>
-      </div>
+      </motion.div>
 
       {/* Preferences */}
-      <div className="card bg-base-100 border border-base-300">
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="card bg-base-100 border border-base-300">
         <div className="card-body gap-3">
           <h3 className="card-title text-sm">Preferences</h3>
 
@@ -105,17 +108,17 @@ export default function SettingsPage() {
             </select>
           </div>
         </div>
-      </div>
+      </motion.div>
 
       {/* Danger zone */}
-      <div className="card bg-base-100 border border-error/30">
+      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="card bg-base-100 border border-error/30">
         <div className="card-body gap-3">
           <h3 className="card-title text-sm text-error">Account</h3>
-          <button className="btn btn-outline btn-error btn-sm w-fit" onClick={handleSignOut}>
+          <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} className="btn btn-outline btn-error btn-sm w-fit" onClick={handleSignOut}>
             Sign Out
-          </button>
+          </motion.button>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 }

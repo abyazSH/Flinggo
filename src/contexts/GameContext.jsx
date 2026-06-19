@@ -1,4 +1,4 @@
-import { createContext, useContext, useReducer, useEffect } from "react";
+import { createContext, useContext, useReducer, useEffect, useRef } from "react";
 import { calcLevel, XP_REWARDS } from "../config/languages";
 import { useAuth } from "./AuthContext";
 import { supabase } from "../config/supabase";
@@ -57,26 +57,30 @@ function gameReducer(state, action) {
 export function GameProvider({ children }) {
   const { user, profile } = useAuth();
   const [state, dispatch] = useReducer(gameReducer, initialState);
+  const xpRef = useRef(0); // always-current XP value to avoid stale-state DB writes
 
   // Load state from profile when user logs in
   useEffect(() => {
     if (profile) {
-      dispatch({
-        type: "LOAD_STATE",
-        payload: {
-          xp: profile.total_xp || 0,
-          level: profile.current_level || 1,
-          streak: profile.streak_days || 0,
-        },
-      });
+      const loaded = {
+        xp: profile.total_xp || 0,
+        level: profile.current_level || 1,
+        streak: profile.streak_days || 0,
+      };
+      dispatch({ type: "LOAD_STATE", payload: loaded });
+      xpRef.current = loaded.xp;
     }
   }, [profile]);
 
   // Persist XP and level changes to Supabase
   async function addXp(amount) {
+    // Compute new XP BEFORE dispatching to avoid stale-state race condition
+    const newXp = xpRef.current + amount;
+    xpRef.current = newXp;
+
     dispatch({ type: "ADD_XP", payload: amount });
+
     if (user) {
-      const newXp = state.xp + amount;
       await supabase
         .from("profiles")
         .update({ total_xp: newXp, current_level: calcLevel(newXp) })

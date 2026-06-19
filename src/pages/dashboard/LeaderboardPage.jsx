@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { motion } from "framer-motion";
 import { useAuth } from "../../contexts/AuthContext";
 import { getLeaderboard } from "../../services/supabaseService";
 
@@ -19,23 +20,23 @@ export default function LeaderboardPage() {
   }, []);
 
   return (
-    <div className="flex flex-col gap-4 p-6 max-w-2xl mx-auto">
-      <h1 className="text-lg font-semibold">🏆 Leaderboard</h1>
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="flex flex-col gap-4 p-6 max-w-2xl mx-auto">
+      <motion.h1 initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="text-lg font-semibold">🏆 Leaderboard</motion.h1>
 
       {loading ? (
         <div className="flex justify-center py-8">
           <span className="loading loading-spinner loading-md" />
         </div>
       ) : leaders.length === 0 ? (
-        <div className="card bg-base-100 border border-base-300">
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }} className="card bg-base-100 border border-base-300">
           <div className="card-body items-center text-center py-16">
             <span className="text-5xl">🏆</span>
             <p className="text-base font-medium mt-2">No rankings yet</p>
             <p className="text-sm text-base-content/50">Be the first to earn XP!</p>
           </div>
-        </div>
+        </motion.div>
       ) : (
-        <div className="card bg-base-100 border border-base-300">
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="card bg-base-100 border border-base-300">
           <div className="card-body p-4 gap-2">
             <ul className="flex flex-col gap-1">
               {leaders.map((leader, i) => {
@@ -44,9 +45,13 @@ export default function LeaderboardPage() {
                 const name = leader.display_name || leader.username;
                 const initials = name.substring(0, 2).toUpperCase();
                 return (
-                  <li
+                  <motion.li
                     key={leader.id}
-                    className={`flex items-center gap-3 px-3 py-2 rounded-lg ${
+                    initial={{ opacity: 0, x: -12 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.05 + i * 0.04 }}
+                    whileHover={{ x: 4 }}
+                    className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
                       isMe ? "bg-primary/10 ring-1 ring-primary/30" : "hover:bg-base-200"
                     }`}
                   >
@@ -67,13 +72,13 @@ export default function LeaderboardPage() {
                     <span className={`text-sm font-semibold ${isMe ? "text-primary" : "text-base-content"}`}>
                       {(leader.total_xp || 0).toLocaleString()} XP
                     </span>
-                  </li>
+                  </motion.li>
                 );
               })}
             </ul>
           </div>
-        </div>
+        </motion.div>
       )}
-    </div>
+    </motion.div>
   );
 }

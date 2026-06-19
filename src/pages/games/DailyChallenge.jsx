@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import ScoreBadge from "../../components/ScoreBadge";
 import FeedbackToast from "../../components/FeedbackToast";
 import { useGameScore } from "../../hooks/useGameScore";
@@ -119,12 +119,12 @@ export default function DailyChallenge() {
   // ── Setup ──
   if (phase === "setup") {
     return (
-      <div className="flex flex-col gap-4 p-6 max-w-lg mx-auto">
-        <h1 className="text-lg font-semibold">📅 Daily Challenge</h1>
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="flex flex-col gap-4 p-6 max-w-lg mx-auto">
+        <motion.h1 initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="text-lg font-semibold">📅 Daily Challenge</motion.h1>
 
         {/* Streak banner */}
         {gameStreak > 0 && (
-          <div className="alert bg-primary/10 border-primary/20 py-3">
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.15 }} className="alert bg-primary/10 border-primary/20 py-3">
             <span className="text-2xl">🔥</span>
             <div>
               <p className="text-sm font-semibold text-primary">{gameStreak} day streak!</p>
@@ -132,7 +132,7 @@ export default function DailyChallenge() {
                 Complete today's challenge to keep it going.
               </p>
             </div>
-          </div>
+          </motion.div>
         )}
 
         <div className="card bg-base-100 border border-base-300">
@@ -192,7 +192,9 @@ export default function DailyChallenge() {
               </div>
             </div>
 
-            <button
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
               className="btn btn-warning btn-sm mt-2"
               onClick={startChallenge}
               disabled={loading}
@@ -204,18 +206,18 @@ export default function DailyChallenge() {
               ) : (
                 "Start Challenge"
               )}
-            </button>
+            </motion.button>
           </div>
         </div>
-      </div>
+      </motion.div>
     );
   }
 
   // ── Results ──
   if (phase === "results") {
     return (
-      <div className="flex flex-col gap-4 p-6 max-w-lg mx-auto">
-        <h1 className="text-lg font-semibold">📅 Challenge Complete!</h1>
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="flex flex-col gap-4 p-6 max-w-lg mx-auto">
+        <motion.h1 initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="text-lg font-semibold">📅 Challenge Complete!</motion.h1>
         <div className="card bg-base-100 border border-base-300">
           <div className="card-body items-center text-center gap-4">
             <span className="text-5xl">🏅</span>
@@ -249,18 +251,18 @@ export default function DailyChallenge() {
               </div>
             )}
 
-            <button className="btn btn-primary btn-sm" onClick={() => setPhase("setup")}>
+            <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }} className="btn btn-primary btn-sm" onClick={() => setPhase("setup")}>
               New Challenge
-            </button>
+            </motion.button>
           </div>
         </div>
-      </div>
+      </motion.div>
     );
   }
 
   // ── Playing ──
   return (
-    <div className="flex flex-col gap-4 p-6 max-w-lg mx-auto relative">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }} className="flex flex-col gap-4 p-6 max-w-lg mx-auto relative">
       <FeedbackToast
         show={feedback?.show}
         isCorrect={feedback?.isCorrect}
@@ -369,31 +371,34 @@ export default function DailyChallenge() {
             <div className="flex gap-2">
               {!checked && (
                 <>
-                  <button
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
                     className="btn btn-ghost btn-xs"
                     onClick={() => setShowHint(true)}
                     disabled={showHint}
                   >
                     💡 Hint
-                  </button>
-                  <button
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.97 }}
                     className="btn btn-warning btn-sm flex-1"
                     onClick={handleSubmit}
                     disabled={!userAnswer.trim()}
                   >
                     Submit Answer
-                  </button>
+                  </motion.button>
                 </>
               )}
               {checked && (
-                <button className="btn btn-primary btn-sm w-full" onClick={showResults}>
+                <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="btn btn-primary btn-sm w-full" onClick={showResults}>
                   See Results
-                </button>
+                </motion.button>
               )}
             </div>
           </div>
         </motion.div>
       )}
-    </div>
+    </motion.div>
   );
 }

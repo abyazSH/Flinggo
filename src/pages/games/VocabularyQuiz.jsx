@@ -146,8 +146,8 @@ export default function VocabularyQuiz() {
   // ── Setup Screen ──
   if (phase === "setup") {
     return (
-      <div className="flex flex-col gap-4 p-6 max-w-lg mx-auto">
-        <h1 className="text-lg font-semibold">🃏 Vocabulary Quiz</h1>
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="flex flex-col gap-4 p-6 max-w-lg mx-auto">
+        <motion.h1 initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="text-lg font-semibold">🃏 Vocabulary Quiz</motion.h1>
         <div className="card bg-base-100 border border-base-300">
           <div className="card-body gap-4">
             <div className="form-control">
@@ -184,7 +184,9 @@ export default function VocabularyQuiz() {
               </div>
             </div>
 
-            <button
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
               className="btn btn-primary btn-sm mt-2"
               onClick={startQuiz}
               disabled={loading}
@@ -196,18 +198,18 @@ export default function VocabularyQuiz() {
               ) : (
                 "Start Quiz"
               )}
-            </button>
+            </motion.button>
           </div>
         </div>
-      </div>
+      </motion.div>
     );
   }
 
   // ── Results Screen ──
   if (phase === "results") {
     return (
-      <div className="flex flex-col gap-4 p-6 max-w-lg mx-auto">
-        <h1 className="text-lg font-semibold">🃏 Quiz Results</h1>
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="flex flex-col gap-4 p-6 max-w-lg mx-auto">
+        <motion.h1 initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="text-lg font-semibold">🃏 Quiz Results</motion.h1>
         <div className="card bg-base-100 border border-base-300">
           <div className="card-body items-center text-center gap-4">
             <span className="text-5xl">{accuracy >= 80 ? "🎉" : accuracy >= 50 ? "👍" : "💪"}</span>
@@ -251,18 +253,18 @@ export default function VocabularyQuiz() {
               </div>
             )}
 
-            <button className="btn btn-primary btn-sm" onClick={() => setPhase("setup")}>
+            <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }} className="btn btn-primary btn-sm" onClick={() => setPhase("setup")}>
               Play Again
-            </button>
+            </motion.button>
           </div>
         </div>
-      </div>
+      </motion.div>
     );
   }
 
   // ── Playing Screen ──
   return (
-    <div className="flex flex-col gap-4 p-6 max-w-lg mx-auto relative">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }} className="flex flex-col gap-4 p-6 max-w-lg mx-auto relative">
       <FeedbackToast
         show={feedback?.show}
         isCorrect={feedback?.isCorrect}
@@ -339,28 +341,30 @@ export default function VocabularyQuiz() {
                       btnClass = "btn btn-outline btn-sm text-sm justify-start opacity-40";
                   }
                   return (
-                    <button
+                    <motion.button
                       key={idx}
+                      whileHover={selected === null ? { scale: 1.02, x: 4 } : {}}
+                      whileTap={selected === null ? { scale: 0.98 } : {}}
                       className={btnClass}
                       onClick={() => handleAnswer(idx)}
                       disabled={selected !== null}
                     >
                       <span className="badge badge-ghost badge-xs mr-2">{String.fromCharCode(65 + idx)}</span>
                       {opt}
-                    </button>
+                    </motion.button>
                   );
                 })}
               </div>
 
               {selected !== null && (
-                <button className="btn btn-primary btn-sm mt-2" onClick={nextQuestion}>
+                <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="btn btn-primary btn-sm mt-2" onClick={nextQuestion}>
                   {currentIdx + 1 >= questions.length ? "See Results" : "Next Question"}
-                </button>
+                </motion.button>
               )}
             </div>
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+    </motion.div>
   );
 }

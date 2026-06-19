@@ -4,6 +4,12 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useGame } from "../../contexts/GameContext";
 import LevelProgress from "../../components/LevelProgress";
 import { getQuizAttempts } from "../../services/supabaseService";
+import { motion } from "framer-motion";
+
+const fadeInUp = {
+  initial: { opacity: 0, y: 20 },
+  animate: { opacity: 1, y: 0 },
+};
 
 export default function Dashboard() {
   const { user, profile, refreshProfile } = useAuth();
@@ -12,145 +18,141 @@ export default function Dashboard() {
   const [recentActivity, setRecentActivity] = useState([]);
   const [totalGames, setTotalGames] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     if (!user) return;
-
-    // Refresh profile from DB so XP/level/streak reflect latest game activity
     refreshProfile();
-
-    // Fetch all quiz attempts to count total games and show recent
     getQuizAttempts(user.id, null, 200)
       .then((atts) => {
         setTotalGames(atts.length);
         setRecentActivity(atts.slice(0, 5));
+        setError(null);
       })
-      .catch(console.error)
+      .catch((err) => {
+        console.error("[Dashboard] Failed to load quiz attempts:", err);
+        setError("Could not load activity data. Please run the Supabase schema SQL and check RLS policies.");
+      })
       .finally(() => setLoading(false));
   }, [user]);
 
   const displayName = profile?.display_name || profile?.username || "Learner";
 
-  return (
-    <div className="flex flex-col gap-4 p-6">
-      {/* Greeting */}
-      <div>
-        <h1 className="text-lg font-semibold">Welcome back, {displayName} 👋</h1>
-        <p className="text-sm text-base-content/50 mt-0.5">
-          Keep up the great work on your language learning journey!
-        </p>
-      </div>
+  const quickPlayItems = [
+    { path: "/chat", icon: "💬", label: "Translation Chat", color: "from-primary/10 to-primary/5" },
+    { path: "/quiz", icon: "🃏", label: "Vocabulary Quiz", color: "from-success/10 to-success/5" },
+    { path: "/sentence", icon: "✍️", label: "Sentence Builder", color: "from-info/10 to-info/5" },
+    { path: "/challenge", icon: "📅", label: "Daily Challenge", color: "from-warning/10 to-warning/5" },
+  ];
 
-      {/* Level Progress — reads live xp/level from GameContext (loaded from profiles table) */}
-      <div className="card bg-base-100 border border-base-300 shadow-none">
-        <div className="card-body p-4">
+  return (
+    <div className="flex flex-col gap-5 p-6 max-w-4xl">
+      <motion.div {...fadeInUp} transition={{ duration: 0.4 }}>
+        <h1 className="text-2xl font-bold">Welcome back, {displayName} 👋</h1>
+        <p className="text-sm text-base-content/50 mt-1">Keep up the great work on your language learning journey!</p>
+      </motion.div>
+
+      <motion.div {...fadeInUp} transition={{ delay: 0.1, duration: 0.4 }} className="card bg-gradient-to-r from-base-100 to-base-200 border border-base-300 shadow-sm">
+        <div className="card-body p-5">
           <LevelProgress xp={xp} level={level} />
         </div>
-      </div>
+      </motion.div>
 
-      {/* Streak banner */}
-      <div className="alert bg-primary/10 border-primary/20 py-3">
-        <span className="text-2xl">🔥</span>
+      <motion.div
+        {...fadeInUp}
+        transition={{ delay: 0.15, duration: 0.4 }}
+        className="alert bg-gradient-to-r from-primary/10 to-secondary/10 border-primary/20 py-4"
+      >
+        <motion.span animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 2, repeat: Infinity }} className="text-3xl">🔥</motion.span>
         <div>
-          <p className="text-sm font-semibold text-primary">{streak} day streak!</p>
+          <p className="text-sm font-bold text-primary">{streak} day streak!</p>
           <p className="text-xs text-primary/70">Complete a challenge today to keep it going.</p>
         </div>
-        <button className="btn btn-primary btn-sm ml-auto" onClick={() => navigate("/challenge")}>
+        <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="btn btn-primary btn-sm ml-auto shadow-lg shadow-primary/25" onClick={() => navigate("/challenge")}>
           Start
-        </button>
-      </div>
+        </motion.button>
+      </motion.div>
 
-      {/* Quick stats — all read from live GameContext state backed by profiles table */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <div className="stat bg-base-200 rounded-xl p-4">
-          <div className="stat-figure text-2xl">⭐</div>
-          <div className="stat-title text-xs text-base-content/50">Total XP</div>
-          <div className="stat-value text-xl font-semibold">{xp.toLocaleString()}</div>
-        </div>
-        <div className="stat bg-base-200 rounded-xl p-4">
-          <div className="stat-figure text-2xl">📊</div>
-          <div className="stat-title text-xs text-base-content/50">Level</div>
-          <div className="stat-value text-xl font-semibold">{level}</div>
-        </div>
-        <div className="stat bg-base-200 rounded-xl p-4">
-          <div className="stat-figure text-2xl">🔥</div>
-          <div className="stat-title text-xs text-base-content/50">Streak</div>
-          <div className="stat-value text-xl font-semibold">{streak} days</div>
-        </div>
-        <div className="stat bg-base-200 rounded-xl p-4">
-          <div className="stat-figure text-2xl">🎮</div>
-          <div className="stat-title text-xs text-base-content/50">Games Played</div>
-          <div className="stat-value text-xl font-semibold">{totalGames}</div>
-        </div>
+        {[
+          { icon: "⭐", label: "Total XP", value: xp.toLocaleString(), delay: 0.2 },
+          { icon: "📊", label: "Level", value: level, delay: 0.25 },
+          { icon: "🔥", label: "Streak", value: `${streak} days`, delay: 0.3 },
+          { icon: "🎮", label: "Games", value: totalGames, delay: 0.35 },
+        ].map((stat, i) => (
+          <motion.div
+            key={stat.label}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: stat.delay, duration: 0.3 }}
+          >
+            <motion.div whileHover={{ y: -4, boxShadow: "0 8px 25px -5px rgba(0,0,0,0.1)" }} className="stat bg-base-100 border border-base-300 rounded-2xl p-4 transition-shadow">
+              <div className="stat-figure text-2xl">{stat.icon}</div>
+              <div className="stat-title text-[10px] text-base-content/50 uppercase tracking-wide">{stat.label}</div>
+              <div className="stat-value text-xl font-bold mt-1">{stat.value}</div>
+            </motion.div>
+          </motion.div>
+        ))}
       </div>
 
-      {/* Quick play buttons */}
-      <div>
-        <h3 className="text-sm font-medium mb-2">Quick Play</h3>
+      <motion.div {...fadeInUp} transition={{ delay: 0.4, duration: 0.4 }}>
+        <h3 className="text-sm font-semibold mb-3">Quick Play</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <button className="card bg-base-100 border border-base-300 hover:border-primary transition-colors cursor-pointer" onClick={() => navigate("/chat")}>
-            <div className="card-body items-center text-center p-4 gap-2">
-              <span className="text-3xl">💬</span>
-              <p className="text-xs font-medium">Translation Chat</p>
-            </div>
-          </button>
-          <button className="card bg-base-100 border border-base-300 hover:border-primary transition-colors cursor-pointer" onClick={() => navigate("/quiz")}>
-            <div className="card-body items-center text-center p-4 gap-2">
-              <span className="text-3xl">🃏</span>
-              <p className="text-xs font-medium">Vocabulary Quiz</p>
-            </div>
-          </button>
-          <button className="card bg-base-100 border border-base-300 hover:border-primary transition-colors cursor-pointer" onClick={() => navigate("/sentence")}>
-            <div className="card-body items-center text-center p-4 gap-2">
-              <span className="text-3xl">✍️</span>
-              <p className="text-xs font-medium">Sentence Builder</p>
-            </div>
-          </button>
-          <button className="card bg-base-100 border border-base-300 hover:border-primary transition-colors cursor-pointer" onClick={() => navigate("/challenge")}>
-            <div className="card-body items-center text-center p-4 gap-2">
-              <span className="text-3xl">📅</span>
-              <p className="text-xs font-medium">Daily Challenge</p>
-            </div>
-          </button>
+          {quickPlayItems.map((item, i) => (
+            <motion.button
+              key={item.path}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 0.45 + i * 0.05 }}
+              whileHover={{ y: -6, boxShadow: "0 12px 30px -10px rgba(0,0,0,0.15)" }}
+              whileTap={{ scale: 0.97 }}
+              className={`card bg-gradient-to-br ${item.color} border border-base-300 cursor-pointer`}
+              onClick={() => navigate(item.path)}
+            >
+              <div className="card-body items-center text-center p-5 gap-2">
+                <motion.span className="text-4xl" whileHover={{ scale: 1.2, rotate: [0, -10, 10, 0] }}>{item.icon}</motion.span>
+                <p className="text-xs font-semibold mt-1">{item.label}</p>
+              </div>
+            </motion.button>
+          ))}
         </div>
-      </div>
+      </motion.div>
 
-      {/* Recent activity — pulls real data from quiz_attempts table */}
-      <div className="card bg-base-100 border border-base-300 shadow-none">
-        <div className="card-body p-4 gap-3">
-          <h3 className="card-title text-sm font-medium">⚡ Recent Activity</h3>
+      <motion.div {...fadeInUp} transition={{ delay: 0.6, duration: 0.4 }} className="card bg-base-100 border border-base-300 shadow-sm">
+        <div className="card-body p-5 gap-3">
+          <h3 className="card-title text-sm font-semibold">⚡ Recent Activity</h3>
+          {error && <div className="alert alert-error py-2 text-xs"><span>{error}</span></div>}
           {loading ? (
-            <div className="flex justify-center py-4">
-              <span className="loading loading-spinner loading-sm" />
-            </div>
+            <div className="flex justify-center py-6"><span className="loading loading-spinner loading-md text-primary" /></div>
           ) : recentActivity.length === 0 ? (
-            <p className="text-xs text-base-content/50 text-center py-4">
-              No activity yet. Start a quiz or chat to see your history!
-            </p>
+            <div className="text-center py-8">
+              <span className="text-4xl block mb-2">🎯</span>
+              <p className="text-sm text-base-content/50">No activity yet. Start a quiz or chat to see your history!</p>
+            </div>
           ) : (
             <ul className="divide-y divide-base-200">
               {recentActivity.map((item, i) => (
-                <li key={i} className="flex items-center gap-3 py-2.5">
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm flex-shrink-0 ${item.is_correct ? "bg-success/10" : "bg-error/10"}`}>
+                <motion.li
+                  key={i}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.65 + i * 0.05 }}
+                  className="flex items-center gap-3 py-3"
+                >
+                  <motion.div whileHover={{ scale: 1.1 }} className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg ${item.is_correct ? "bg-success/10" : "bg-error/10"}`}>
                     {item.quiz_type === "vocabulary" ? "🃏" : item.quiz_type === "sentence" ? "✍️" : "📅"}
-                  </div>
+                  </motion.div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-base-content truncate capitalize">
-                      {item.quiz_type} quiz
-                    </p>
-                    <p className="text-xs text-base-content/50">
-                      {item.is_correct ? "Correct" : "Incorrect"} — +{item.xp_earned} XP
-                    </p>
+                    <p className="text-sm font-medium capitalize">{item.quiz_type} quiz</p>
+                    <p className="text-xs text-base-content/50">{item.is_correct ? "✅ Correct" : "❌ Incorrect"} — +{item.xp_earned} XP</p>
                   </div>
-                  <span className="text-xs text-base-content/40 flex-shrink-0">
-                    {new Date(item.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                  </span>
-                </li>
+                  <span className="text-xs text-base-content/40">{new Date(item.created_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</span>
+                </motion.li>
               ))}
             </ul>
           )}
         </div>
-      </div>
+      </motion.div>
     </div>
   );
 }

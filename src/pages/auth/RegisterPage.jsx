@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import { useAuth } from "../../contexts/AuthContext";
 
 export default function RegisterPage() {
@@ -29,7 +30,7 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       await signUp({ email: form.email, password: form.password, username: form.username });
-      navigate("/login?registered=1");
+      navigate("/dashboard");
     } catch (err) {
       setError(err.message || "Registration failed");
     } finally {
@@ -99,9 +100,15 @@ export default function RegisterPage() {
             />
           </div>
 
-          <button type="submit" className={`btn btn-primary btn-sm mt-2 ${loading ? "loading" : ""}`} disabled={loading}>
+          <motion.button
+            type="submit"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className={`btn btn-primary btn-sm mt-2 shadow-lg shadow-primary/25 ${loading ? "loading" : ""}`}
+            disabled={loading}
+          >
             {loading ? "Creating account..." : "Create account"}
-          </button>
+          </motion.button>
         </form>
 
         <p className="text-sm text-center text-base-content/50">

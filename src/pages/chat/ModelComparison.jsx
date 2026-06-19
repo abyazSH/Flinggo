@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { motion } from "framer-motion";
 
 export default function ModelComparison({ llamaResult, gemmaResult, comparison }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
       {/* Llama output */}
-      <div className="card bg-base-100 border border-base-300 shadow-none">
+      <motion.div initial={{ opacity: 0, x: -16 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.35 }} whileHover={{ y: -2 }} className="card bg-base-100 border border-base-300 shadow-none">
         <div className="card-body p-3 gap-2">
           <div className="flex items-center gap-2">
             <span className="badge badge-sm badge-primary">🦙 Llama 3</span>
@@ -26,10 +26,10 @@ export default function ModelComparison({ llamaResult, gemmaResult, comparison }
             </div>
           )}
         </div>
-      </div>
+      </motion.div>
 
       {/* Gemma output */}
-      <div className="card bg-base-100 border border-base-300 shadow-none">
+      <motion.div initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.35, delay: 0.1 }} whileHover={{ y: -2 }} className="card bg-base-100 border border-base-300 shadow-none">
         <div className="card-body p-3 gap-2">
           <div className="flex items-center gap-2">
             <span className="badge badge-sm badge-secondary">💎 Gemma 3</span>
@@ -51,29 +51,27 @@ export default function ModelComparison({ llamaResult, gemmaResult, comparison }
             </div>
           )}
         </div>
-      </div>
+      </motion.div>
 
       {/* Comparison metrics */}
       {comparison && (
-        <div className="col-span-full card bg-base-200 border border-base-300 shadow-none">
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }} className="col-span-full card bg-base-200 border border-base-300 shadow-none">
           <div className="card-body p-3 gap-2">
             <h4 className="text-xs font-semibold text-base-content/70">Comparison Metrics</h4>
             <div className="grid grid-cols-3 gap-2 text-center">
-              <div>
-                <p className="text-xs text-base-content/50">Word Similarity</p>
-                <p className="text-sm font-bold text-primary">{comparison.wordSimilarity}%</p>
-              </div>
-              <div>
-                <p className="text-xs text-base-content/50">Words (L/G)</p>
-                <p className="text-sm font-bold">{comparison.llamaWordCount}/{comparison.gemmaWordCount}</p>
-              </div>
-              <div>
-                <p className="text-xs text-base-content/50">Chars (L/G)</p>
-                <p className="text-sm font-bold">{comparison.llamaCharCount}/{comparison.gemmaCharCount}</p>
-              </div>
+              {[
+                { label: "Word Similarity", value: `${comparison.wordSimilarity}%`, cls: "text-primary" },
+                { label: "Words (L/G)", value: `${comparison.llamaWordCount}/${comparison.gemmaWordCount}`, cls: "" },
+                { label: "Chars (L/G)", value: `${comparison.llamaCharCount}/${comparison.gemmaCharCount}`, cls: "" },
+              ].map((m, i) => (
+                <motion.div key={m.label} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 + i * 0.06 }}>
+                  <p className="text-xs text-base-content/50">{m.label}</p>
+                  <p className={`text-sm font-bold ${m.cls}`}>{m.value}</p>
+                </motion.div>
+              ))}
             </div>
           </div>
-        </div>
+        </motion.div>
       )}
     </div>
   );

@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 import { useAuth } from "../../contexts/AuthContext";
 
 export default function LoginPage() {
@@ -64,9 +65,15 @@ export default function LoginPage() {
             />
           </div>
 
-          <button type="submit" className={`btn btn-primary btn-sm mt-2 ${loading ? "loading" : ""}`} disabled={loading}>
+          <motion.button
+            type="submit"
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.98 }}
+            className={`btn btn-primary btn-sm mt-2 shadow-lg shadow-primary/25 ${loading ? "loading" : ""}`}
+            disabled={loading}
+          >
             {loading ? "Signing in..." : "Sign in"}
-          </button>
+          </motion.button>
         </form>
 
         <p className="text-sm text-center text-base-content/50">

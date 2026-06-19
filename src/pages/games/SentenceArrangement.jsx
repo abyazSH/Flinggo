@@ -178,8 +178,8 @@ export default function SentenceArrangement() {
   // ── Setup ──
   if (phase === "setup") {
     return (
-      <div className="flex flex-col gap-4 p-6 max-w-lg mx-auto">
-        <h1 className="text-lg font-semibold">✍️ Sentence Arrangement</h1>
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="flex flex-col gap-4 p-6 max-w-lg mx-auto">
+        <motion.h1 initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="text-lg font-semibold">✍️ Sentence Arrangement</motion.h1>
         <div className="card bg-base-100 border border-base-300">
           <div className="card-body gap-4">
             <div className="form-control">
@@ -214,7 +214,9 @@ export default function SentenceArrangement() {
                 ))}
               </div>
             </div>
-            <button
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
               className="btn btn-primary btn-sm mt-2"
               onClick={startGame}
               disabled={loading}
@@ -226,18 +228,18 @@ export default function SentenceArrangement() {
               ) : (
                 "Start Exercise"
               )}
-            </button>
+            </motion.button>
           </div>
         </div>
-      </div>
+      </motion.div>
     );
   }
 
   // ── Results ──
   if (phase === "results") {
     return (
-      <div className="flex flex-col gap-4 p-6 max-w-lg mx-auto">
-        <h1 className="text-lg font-semibold">✍️ Exercise Results</h1>
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="flex flex-col gap-4 p-6 max-w-lg mx-auto">
+        <motion.h1 initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="text-lg font-semibold">✍️ Exercise Results</motion.h1>
         <div className="card bg-base-100 border border-base-300">
           <div className="card-body items-center text-center gap-4">
             <span className="text-5xl">
@@ -282,18 +284,18 @@ export default function SentenceArrangement() {
               </div>
             )}
 
-            <button className="btn btn-primary btn-sm" onClick={() => setPhase("setup")}>
+            <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.97 }} className="btn btn-primary btn-sm" onClick={() => setPhase("setup")}>
               Play Again
-            </button>
+            </motion.button>
           </div>
         </div>
-      </div>
+      </motion.div>
     );
   }
 
   // ── Playing ──
   return (
-    <div className="flex flex-col gap-4 p-6 max-w-lg mx-auto relative">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }} className="flex flex-col gap-4 p-6 max-w-lg mx-auto relative">
       <FeedbackToast
         show={feedback?.show}
         isCorrect={feedback?.isCorrect}
@@ -417,31 +419,34 @@ export default function SentenceArrangement() {
             <div className="flex gap-2 justify-between">
               {!checked && (
                 <>
-                  <button
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
                     className="btn btn-ghost btn-xs"
                     onClick={() => setShowHint(true)}
                     disabled={showHint}
                   >
                     💡 Hint
-                  </button>
-                  <button
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.03 }}
+                    whileTap={{ scale: 0.97 }}
                     className="btn btn-primary btn-sm"
                     onClick={checkAnswer}
                     disabled={arranged.length === 0}
                   >
                     Check Answer
-                  </button>
+                  </motion.button>
                 </>
               )}
               {checked && (
-                <button className="btn btn-primary btn-sm w-full" onClick={nextExercise}>
+                <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="btn btn-primary btn-sm w-full" onClick={nextExercise}>
                   {currentIdx + 1 >= exercises.length ? "See Results" : "Next Exercise"}
-                </button>
+                </motion.button>
               )}
             </div>
           </div>
         </div>
       )}
-    </div>
+    </motion.div>
   );
 }

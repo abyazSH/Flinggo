@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../contexts/AuthContext";
 
@@ -24,23 +25,23 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <div className="card bg-base-100 shadow-lg border border-base-300">
+    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="card bg-base-100 shadow-lg border border-base-300">
       <div className="card-body gap-4">
-        <h2 className="card-title text-xl justify-center">Reset password</h2>
+        <motion.h2 initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="card-title text-xl justify-center">Reset password</motion.h2>
         <p className="text-sm text-base-content/50 text-center">
           Enter your email and we'll send you a reset link
         </p>
 
         {error && (
-          <div className="alert alert-error text-sm py-2">
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="alert alert-error text-sm py-2">
             <span>{error}</span>
-          </div>
+          </motion.div>
         )}
 
         {success ? (
-          <div className="alert alert-success text-sm py-2">
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="alert alert-success text-sm py-2">
             <span>Check your email for a password reset link!</span>
-          </div>
+          </motion.div>
         ) : (
           <form onSubmit={handleSubmit} className="flex flex-col gap-3">
             <div className="form-control">
@@ -55,9 +56,9 @@ export default function ForgotPasswordPage() {
               />
             </div>
 
-            <button type="submit" className={`btn btn-primary btn-sm mt-2 ${loading ? "loading" : ""}`} disabled={loading}>
+            <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} type="submit" className={`btn btn-primary btn-sm mt-2 ${loading ? "loading" : ""}`} disabled={loading}>
               {loading ? "Sending..." : "Send reset link"}
-            </button>
+            </motion.button>
           </form>
         )}
 
@@ -65,6 +66,6 @@ export default function ForgotPasswordPage() {
           <Link to="/login" className="text-primary font-medium">Back to login</Link>
         </p>
       </div>
-    </div>
+    </motion.div>
   );
 }
