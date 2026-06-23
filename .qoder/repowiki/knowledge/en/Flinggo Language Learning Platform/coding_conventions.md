@@ -1,0 +1,3 @@
+- Custom hooks (e.g., `useAuth`, `useGame`, `useLLM`) are used to encapsulate context access and complex side effects, keeping components declarative.
+- Service functions in `src/services/` consistently throw errors on failure, leaving error handling to the calling hooks or components.
+- Layout components (`AppLayout`, `AuthLayout`) utilize the `<Outlet />` pattern from `react-router-dom` to render nested child routes.

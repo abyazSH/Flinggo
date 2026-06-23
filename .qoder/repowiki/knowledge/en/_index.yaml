@@ -1,0 +1,51 @@
+# 知识卡导出索引文件
+schema_version: 1
+locale: en-US
+branch: master
+exported_at: "2026-06-22T08:11:44Z"
+modules:
+    "":
+        dir_name: Flinggo Language Learning Platform
+        title: Flinggo Language Learning Platform
+        scope:
+            - README.md
+            - .gitignore
+            - package.json
+            - package-lock.json
+            - vite.config.js
+            - tailwind.config.js
+            - postcss.config.js
+            - eslint.config.js
+            - index.html
+            - supabase-schema.sql
+            - src/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to: []
+    decisions:
+        dir_name: Decisions
+        title: Decisions
+        scope: []
+        source_files: []
+        children:
+            - decisions/6f5f8ae2d491_008d44b8c3af
+            - decisions/6f5f8ae2d491_1c7a57733540
+        depends_on: []
+        related_to: []
+    decisions/6f5f8ae2d491_1c7a57733540:
+        dir_name: Adopt serverless frontend architecture with direct LLM API calls
+        title: Adopt serverless frontend architecture with direct LLM API calls
+        scope: []
+        source_files: []
+        children: []
+        depends_on: []
+        related_to: []
+    decisions/6f5f8ae2d491_008d44b8c3af:
+        dir_name: Use Multi-LLM Comparison for Translation Quality
+        title: Use Multi-LLM Comparison for Translation Quality
+        scope: []
+        source_files: []
+        children: []
+        depends_on: []
+        related_to: []

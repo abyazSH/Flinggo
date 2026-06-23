@@ -1,0 +1,1 @@
+Use Multi-LLM Comparison for Translation Quality — Integrate both Llama 3 (via Meta AI API) and Gemma 3 (via Google AI Studio) as primary providers.

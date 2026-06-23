@@ -1,0 +1,1 @@
+A React-based translation learning application featuring dual LLM comparison, gamified educational exercises, and Supabase-backed user progress tracking.

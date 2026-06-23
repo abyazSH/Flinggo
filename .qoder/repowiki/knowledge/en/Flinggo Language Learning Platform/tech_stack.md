@@ -1,0 +1,1 @@
+React 18 with Vite 5 for build tooling; Tailwind CSS with DaisyUI for styling; Supabase JS Client for authentication and PostgreSQL data persistence; Meta Llama 3 (via REST) and Google Gemma 3 (via `@google/generative-ai` SDK) for dual-model translation comparison.

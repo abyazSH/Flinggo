@@ -1,0 +1,1 @@
+Adopt serverless frontend architecture with direct LLM API calls — Implement a 'No backend server' architecture where all API calls (Supabase, Meta AI, Google AI) originate directly from the React frontend.

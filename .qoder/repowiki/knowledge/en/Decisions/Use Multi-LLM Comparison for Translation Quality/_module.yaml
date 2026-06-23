@@ -1,0 +1,7 @@
+schema_version: 1
+module_path: decisions/6f5f8ae2d491_008d44b8c3af
+title: Use Multi-LLM Comparison for Translation Quality
+scope: []
+source_files: []
+depends_on: []
+related_to: []

@@ -1,0 +1,5 @@
+- Entry point: `src/main.jsx` bootstraps React with `BrowserRouter`; `src/App.jsx` defines route structure using nested layouts (`AuthLayout`, `AppLayout`) and a `ProtectedRoute` guard.
+- State management: Global state is handled via React Context (`AuthContext` for session/profile, `GameContext` for XP/level/streak) using `useReducer` for game logic.
+- Data layer: `src/config/supabase.js` initializes the Supabase client with environment validation; `src/services/supabaseService.js` encapsulates all database interactions (CRUD for profiles, quiz attempts, and game content).
+- LLM Integration: `src/hooks/useLLM.js` abstracts translation logic, delegating to `llamaService.js` (Meta AI API via fetch) and `gemmaService.js` (Google AI Studio via SDK) in `src/services/`.
+- UI Structure: Components are organized by responsibility in `src/components/` (reusable UI), `src/layouts/` (page shells), and `src/pages/` (route-specific views for auth, dashboard, chat, and games).

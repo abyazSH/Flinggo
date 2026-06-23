@@ -1,0 +1,7 @@
+schema_version: 1
+module_path: decisions/6f5f8ae2d491_1c7a57733540
+title: Adopt serverless frontend architecture with direct LLM API calls
+scope: []
+source_files: []
+depends_on: []
+related_to: []
