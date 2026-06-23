@@ -1,7 +1,5 @@
 export const LANGUAGES = [
   { code: "en", name: "English",    flag: "\u{1F1EC}\u{1F1E7}" },
-  { code: "es", name: "Spanish",    flag: "\u{1F1EA}\u{1F1F8}" },
-  { code: "fr", name: "French",     flag: "\u{1F1EB}\u{1F1F7}" },
   { code: "ms", name: "Malay",      flag: "\u{1F1F2}\u{1F1FE}" },
   { code: "id", name: "Indonesian", flag: "\u{1F1EE}\u{1F1E9}" },
 ];
