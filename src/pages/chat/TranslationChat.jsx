@@ -10,6 +10,8 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useGame } from "../../contexts/GameContext";
 import { saveTranslation } from "../../services/supabaseService";
 import { getLanguageByCode } from "../../config/languages";
+// Mengimpor fungsi chat khusus untuk menangani percakapan santai di Flingo
+import { chatWithFlingo } from "../../services/llamaService"; 
 
 const GUEST_LIMIT = 5;
 const STORAGE_KEY = "flingo_guest_translations";
@@ -18,15 +20,18 @@ export default function TranslationChat() {
   const { user } = useAuth();
   const { level, xp } = useGame();
   const navigate = useNavigate();
-  const { translateText, translateBothModels, isLoading } = useLLM();
+  const { translateText, translateBothModels, isLoading: isLlmLoading } = useLLM();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
-  const [sourceLang, setSourceLang] = useState("en");
-  const [targetLang, setTargetLang] = useState("es");
+  const [sourceLang, setSourceLang] = useState("id"); // Default ke "id" (Indonesia) sesuai target korpus
+  const [targetLang, setTargetLang] = useState("en"); // Default ke "en" (Inggris)
   const [mode, setMode] = useState("llama");
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [isLocalLoading, setIsLocalLoading] = useState(false);
   const chatEndRef = useRef(null);
+
+  const isLoading = isLlmLoading || isLocalLoading;
 
   const [guestCount, setGuestCount] = useState(() => {
     if (user) return 0;
@@ -59,6 +64,25 @@ export default function TranslationChat() {
     return newCount;
   }
 
+  // === FUNGSI DETEKSI KONTEKS OTOMATIS: LUWES & PINTAR ===
+  function isConversational(text) {
+    const txt = text.toLowerCase().trim();
+    const wordCount = txt.split(/\s+/).length;
+
+    // 1. Cek jika mengandung kata kunci sapaan dasar atau pencarian identitas Flingo
+    const chatKeywords = [
+      "halo", "hai", "hello", "hi", "haloo", "helo", "apa kabar", "kamu siapa", 
+      "siapa", "nama", "pengembang", "pembuat", "terima kasih", "thanks", "makasih", "test"
+    ];
+    const hasKeyword = chatKeywords.some(keyword => txt.includes(keyword));
+
+    // 2. Jika kalimatnya pendek (di bawah 4 kata) dan TIDAK mengandung kata perintah translasi formal
+    const isShortQuery = wordCount < 4 && !txt.includes("terjemahkan") && !txt.includes("translate") && !txt.includes("penerjemahan");
+
+    // Jika salah satu dari kondisi di atas terpenuhi, maka masuk Chat Mode
+    return hasKeyword || isShortQuery;
+  }
+
   async function handleSend(e) {
     e?.preventDefault();
     if (!input.trim() || isLoading) return;
@@ -68,41 +92,57 @@ export default function TranslationChat() {
       return;
     }
 
+    const currentInput = input.trim();
+
     const userMsg = {
       id: Date.now(),
       isUser: true,
-      text: input,
+      text: currentInput,
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     };
     setMessages((prev) => [...prev, userMsg]);
-
-    const text = input.trim();
     setInput("");
 
     if (isGuest) incrementGuestCount();
 
     try {
-      if (mode === "compare") {
-        const result = await translateBothModels(text, sourceLang, targetLang);
+      // PERCABANGAN LOGIKA: Memisahkan Chat Mode dan Translation Mode secara bersih
+      if (isConversational(currentInput)) {
+        setIsLocalLoading(true);
+        const result = await chatWithFlingo(currentInput);
+        const botMsg = {
+          id: Date.now() + 1,
+          isUser: false,
+          text: result.translation,
+          model: "Flingo LLaMA 3 Engine",
+          explanation: "Respons percakapan umum berbasis default Bahasa Indonesia.",
+          confidence: 1.0,
+          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+        };
+        setMessages((prev) => [...prev, botMsg]);
+        setIsLocalLoading(false);
+      } else if (mode === "compare") {
+        const result = await translateBothModels(currentInput, sourceLang, targetLang);
         const botMsg = {
           id: Date.now() + 1, isUser: false, isComparison: true,
           llamaResult: result.llama, gemmaResult: result.gemma, comparison: result.comparison,
-          sourceText: text, timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          sourceText: currentInput, timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         };
         setMessages((prev) => [...prev, botMsg]);
-        if (user) saveTranslation({ userId: user.id, sourceLang, targetLang, inputText: text, llamaOutput: result.llama?.translation, gemmaOutput: result.gemma?.translation, selectedModel: "compare" }).catch(console.error);
+        if (user) saveTranslation({ userId: user.id, sourceLang, targetLang, inputText: currentInput, llamaOutput: result.llama?.translation, gemmaOutput: result.gemma?.translation, selectedModel: "compare" }).catch(console.error);
       } else {
-        const result = await translateText(text, sourceLang, targetLang, mode);
+        const result = await translateText(currentInput, sourceLang, targetLang, mode);
         const botMsg = {
           id: Date.now() + 1, isUser: false, text: result.translation, model: result.model,
           explanation: result.explanation, confidence: result.confidence,
           timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         };
         setMessages((prev) => [...prev, botMsg]);
-        if (user) saveTranslation({ userId: user.id, sourceLang, targetLang, inputText: text, llamaOutput: mode === "llama" ? result.translation : null, gemmaOutput: mode === "gemma" ? result.translation : null, selectedModel: mode }).catch(console.error);
+        if (user) saveTranslation({ userId: user.id, sourceLang, targetLang, inputText: currentInput, llamaOutput: mode === "llama" ? result.translation : null, gemmaOutput: mode === "gemma" ? result.translation : null, selectedModel: mode }).catch(console.error);
       }
     } catch (err) {
       setMessages((prev) => [...prev, { id: Date.now() + 1, isUser: false, text: `Error: ${err.message}`, timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) }]);
+      setIsLocalLoading(false);
     }
   }
 
@@ -119,13 +159,13 @@ export default function TranslationChat() {
             <motion.div initial={{ scale: 0.9, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 20 }} className="card bg-base-100 border border-base-300 w-full max-w-sm mx-4 shadow-2xl">
               <div className="card-body items-center text-center gap-4 p-6">
                 <motion.span animate={{ rotate: [0, -10, 10, 0] }} transition={{ duration: 0.5 }} className="text-5xl">🔒</motion.span>
-                <h2 className="text-lg font-bold">Free trial limit reached</h2>
-                <p className="text-sm text-base-content/60">You've used all {GUEST_LIMIT} free translations. Sign in for unlimited access.</p>
+                <h2 className="text-lg font-bold">Batas uji coba gratis tercapai</h2>
+                <p className="text-sm text-base-content/60">Anda telah menggunakan semua {GUEST_LIMIT} terjemahan gratis. Masuk untuk akses tanpa batas.</p>
                 <div className="flex flex-col gap-2 w-full mt-2">
-                  <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="btn btn-primary btn-sm w-full" onClick={() => navigate("/register")}>Create free account</motion.button>
-                  <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="btn btn-ghost btn-sm w-full" onClick={() => navigate("/login")}>Sign in</motion.button>
+                  <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="btn btn-primary btn-sm w-full" onClick={() => navigate("/register")}>Buat akun gratis</motion.button>
+                  <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="btn btn-ghost btn-sm w-full" onClick={() => navigate("/login")}>Masuk</motion.button>
                 </div>
-                <button className="btn btn-ghost btn-xs mt-1" onClick={() => setShowLoginModal(false)}>Close</button>
+                <button className="btn btn-ghost btn-xs mt-1" onClick={() => setShowLoginModal(false)}>Tutup</button>
               </div>
             </motion.div>
           </motion.div>
@@ -141,12 +181,12 @@ export default function TranslationChat() {
             <div className="flex items-center gap-2">
               {isGuest && (
                 <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} className={`badge badge-sm ${remaining <= 2 ? "badge-warning" : "badge-ghost"}`}>
-                  {remaining} free translation{remaining !== 1 ? "s" : ""} left
+                  Sisa {remaining} terjemahan gratis
                 </motion.div>
               )}
               <ModelToggle mode={mode} onChange={setMode} />
               {user && (
-                <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className={`btn btn-ghost btn-sm btn-circle ${showHistory ? "btn-active" : ""}`} onClick={() => setShowHistory(!showHistory)} title="Translation history">
+                <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className={`btn btn-ghost btn-sm btn-circle ${showHistory ? "btn-active" : ""}`} onClick={() => setShowHistory(!showHistory)} title="Riwayat terjemahan">
                   📋
                 </motion.button>
               )}
@@ -161,19 +201,19 @@ export default function TranslationChat() {
               <motion.span animate={{ y: [0, -8, 0] }} transition={{ duration: 2, repeat: Infinity }} className="text-6xl">💬</motion.span>
               <div>
                 <p className="text-lg font-semibold">
-                  {isGuest ? "Try AI Translation for Free" : "Start a translation conversation"}
+                  {isGuest ? "Coba Flingo AI Secara Gratis" : "Mulai percakapan bersama Flingo"}
                 </p>
                 <p className="text-sm text-base-content/50 max-w-sm mt-1">
-                  Type text in {srcLang.name} and get instant translations in {tgtLang.name} powered by {mode === "compare" ? "Llama 3 & Gemma 3" : mode === "llama" ? "Llama 3" : "Gemma 3"}.
+                  Ketik teks dalam bahasa {srcLang.name} untuk mendapatkan terjemahan instan ke bahasa {tgtLang.name} yang didukung oleh {mode === "compare" ? "Llama 3 & Gemma 3" : mode === "llama" ? "Llama 3" : "Gemma 3"}.
                 </p>
               </div>
               {isGuest && (
                 <div className="badge badge-outline badge-sm gap-1">
-                  <span>🎁</span> {GUEST_LIMIT} free translations to try
+                  <span>🎁</span> Tersedia {GUEST_LIMIT} kuota gratis uji coba
                 </div>
               )}
               <div className="flex gap-2 mt-2 flex-wrap justify-center">
-                {["Hello, how are you?", "Good morning!", "Thank you very much", "Where is the restaurant?"].map((sample, i) => (
+                {["Halo, kamu siapa?", "Saye nak pergi besok", "Where is the restaurant?", "Apa kabar?"].map((sample, i) => (
                   <motion.button
                     key={sample}
                     initial={{ opacity: 0, y: 10 }}
@@ -190,9 +230,9 @@ export default function TranslationChat() {
               </div>
               {!isGuest && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.7 }} className="flex gap-4 mt-4 text-xs text-base-content/40">
-                  <span>🤖 Dual AI models</span>
-                  <span>🌍 3 languages</span>
-                  <span>♾️ Unlimited</span>
+                  <span>🤖 Dual Mesin AI</span>
+                  <span>🌍 3 Bahasa Terintegrasi</span>
+                  <span>♾️ Akses Tak Terbatas</span>
                 </motion.div>
               )}
             </motion.div>
@@ -202,7 +242,7 @@ export default function TranslationChat() {
             {messages.map((msg) =>
               msg.isComparison ? (
                 <motion.div key={msg.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mb-4">
-                  <p className="text-xs text-base-content/50 mb-2">Translating: "{msg.sourceText}" ({srcLang.flag} → {tgtLang.flag})</p>
+                  <p className="text-xs text-base-content/50 mb-2">Menerjemahkan: "{msg.sourceText}" ({srcLang.flag} → {tgtLang.flag})</p>
                   <ModelComparison llamaResult={msg.llamaResult} gemmaResult={msg.gemmaResult} comparison={msg.comparison} />
                 </motion.div>
               ) : (
@@ -228,13 +268,13 @@ export default function TranslationChat() {
           <input
             type="text"
             className="input input-bordered input-sm flex-1 text-sm"
-            placeholder={isGuest && guestCount >= GUEST_LIMIT ? "Free trial limit reached — sign in to continue..." : `Type in ${srcLang.name} to translate to ${tgtLang.name}...`}
+            placeholder={isGuest && guestCount >= GUEST_LIMIT ? "Batas uji coba gratis habis — silakan masuk..." : `Ketik dalam bahasa ${srcLang.name} untuk berinteraksi...`}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             disabled={isLoading || (isGuest && guestCount >= GUEST_LIMIT)}
           />
           <motion.button type="submit" whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="btn btn-primary btn-sm shadow-md shadow-primary/20" disabled={isLoading || !input.trim()}>
-            {isLoading ? <span className="loading loading-spinner loading-xs" /> : "Send"}
+            {isLoading ? <span className="loading loading-spinner loading-xs" /> : "Kirim"}
           </motion.button>
         </form>
       </div>
@@ -247,11 +287,11 @@ export default function TranslationChat() {
             animate={{ width: 280, opacity: 1 }}
             exit={{ width: 0, opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="border-l border-base-300 bg-base-100 overflow-hidden flex-shrink-0"
+            className="border-l border-l-base-300 bg-base-100 overflow-hidden flex-shrink-0"
           >
             <div className="w-[280px] p-4 flex flex-col h-full">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-sm font-bold">Session Info</h3>
+                <h3 className="text-sm font-bold">Info Sesi</h3>
                 <button className="btn btn-ghost btn-xs btn-circle" onClick={() => setShowHistory(false)}>✕</button>
               </div>
 
@@ -262,13 +302,13 @@ export default function TranslationChat() {
                     <div className="badge badge-primary badge-sm">Lv {level}</div>
                     <div className="badge badge-ghost badge-sm">⭐ {xp.toLocaleString()} XP</div>
                   </div>
-                  <p className="text-xs text-base-content/50 mt-1">Session translations: <span className="font-bold text-base-content">{translationCount}</span></p>
+                  <p className="text-xs text-base-content/50 mt-1">Interaksi sesi ini: <span className="font-bold text-base-content">{translationCount}</span></p>
                 </div>
               </div>
 
               {/* Active models */}
               <div className="mb-4">
-                <p className="text-[10px] uppercase tracking-wider text-base-content/40 font-semibold mb-2">Active Model</p>
+                <p className="text-[10px] uppercase tracking-wider text-base-content/40 font-semibold mb-2">Model Aktif</p>
                 <div className="flex gap-1.5">
                   {mode === "llama" && <div className="badge badge-sm bg-blue-500/10 text-blue-500 border-blue-500/20">🦙 Llama 3</div>}
                   {mode === "gemma" && <div className="badge badge-sm bg-emerald-500/10 text-emerald-500 border-emerald-500/20">💎 Gemma 3</div>}
@@ -283,7 +323,7 @@ export default function TranslationChat() {
 
               {/* Languages */}
               <div className="mb-4">
-                <p className="text-[10px] uppercase tracking-wider text-base-content/40 font-semibold mb-2">Languages</p>
+                <p className="text-[10px] uppercase tracking-wider text-base-content/40 font-semibold mb-2">Bahasa</p>
                 <div className="flex items-center gap-2 text-sm">
                   <span>{srcLang.flag}</span>
                   <span className="text-xs">{srcLang.name}</span>
@@ -295,9 +335,9 @@ export default function TranslationChat() {
 
               {/* Recent translations */}
               <div className="flex-1 overflow-y-auto">
-                <p className="text-[10px] uppercase tracking-wider text-base-content/40 font-semibold mb-2">Recent Translations</p>
+                <p className="text-[10px] uppercase tracking-wider text-base-content/40 font-semibold mb-2">Interaksi Terakhir</p>
                 {messages.filter((m) => m.isUser).length === 0 ? (
-                  <p className="text-xs text-base-content/30 text-center py-6">No translations yet</p>
+                  <p className="text-xs text-base-content/30 text-center py-6">Belum ada aktivitas</p>
                 ) : (
                   <div className="flex flex-col gap-2">
                     {messages.filter((m) => m.isUser).slice(-10).reverse().map((msg) => (
@@ -312,8 +352,8 @@ export default function TranslationChat() {
 
               {/* Quick actions */}
               <div className="border-t border-base-300 pt-3 mt-3 flex flex-col gap-1.5">
-                <button className="btn btn-ghost btn-xs justify-start gap-2" onClick={() => { setMessages([]); }}>🗑️ Clear chat</button>
-                <button className="btn btn-ghost btn-xs justify-start gap-2" onClick={() => navigate("/progress")}>📊 View progress</button>
+                <button className="btn btn-ghost btn-xs justify-start gap-2" onClick={() => { setMessages([]); }}>🗑️ Bersihkan obrolan</button>
+                <button className="btn btn-ghost btn-xs justify-start gap-2" onClick={() => navigate("/progress")}>📊 Lihat progres</button>
               </div>
             </div>
           </motion.aside>
