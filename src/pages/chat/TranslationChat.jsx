@@ -191,7 +191,7 @@ export default function TranslationChat() {
               {!isGuest && (
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.7 }} className="flex gap-4 mt-4 text-xs text-base-content/40">
                   <span>🤖 Dual AI models</span>
-                  <span>🌍 5 languages</span>
+                  <span>🌍 3 languages</span>
                   <span>♾️ Unlimited</span>
                 </motion.div>
               )}

@@ -41,7 +41,7 @@ export default function GuestChatLayout() {
           <div className="flex items-center justify-center gap-6 py-2 px-4 text-xs text-base-content/60 flex-wrap">
             <motion.span initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 }} className="flex items-center gap-1"><span className="text-primary font-bold">🤖</span> Dual AI Translation</motion.span>
             <span className="text-base-content/20">|</span>
-            <motion.span initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.6 }} className="flex items-center gap-1"><span>🌍</span> 5 Languages</motion.span>
+            <motion.span initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.6 }} className="flex items-center gap-1"><span>🌍</span> 3 Languages</motion.span>
             <span className="text-base-content/20">|</span>
             <motion.span initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.7 }} className="flex items-center gap-1"><span>🎮</span> 3 Learning Games</motion.span>
             <span className="text-base-content/20">|</span>
