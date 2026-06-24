@@ -1,4 +1,4 @@
-const API_URL = "https://angkykurniawan-glossa.hf.space/api/chat";
+const API_URL = "https://angkykurniawan-glossa.hf.space/api/chat/llama";
 
 export async function chatWithFlingo(text) {
   try {

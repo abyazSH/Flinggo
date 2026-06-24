@@ -10,7 +10,6 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useGame } from "../../contexts/GameContext";
 import { saveTranslation } from "../../services/supabaseService";
 import { getLanguageByCode } from "../../config/languages";
-// Mengimpor fungsi chat khusus untuk menangani percakapan santai di Flingo
 import { chatWithFlingo } from "../../services/llamaService"; 
 
 const GUEST_LIMIT = 5;
@@ -21,17 +20,29 @@ export default function TranslationChat() {
   const { level, xp } = useGame();
   const navigate = useNavigate();
   const { translateText, translateBothModels, isLoading: isLlmLoading } = useLLM();
-  const [messages, setMessages] = useState([]);
+  
+  // State manajemen riwayat obrolan per model
+  const [llamaMessages, setLlamaMessages] = useState([]);
+  const [gemmaMessages, setGemmaMessages] = useState([]);
+  const [compareMessages, setCompareMessages] = useState([]);
+  
   const [input, setInput] = useState("");
-  const [sourceLang, setSourceLang] = useState("id"); // Default ke "id" (Indonesia) sesuai target korpus
-  const [targetLang, setTargetLang] = useState("en"); // Default ke "en" (Inggris)
-  const [mode, setMode] = useState("llama");
+  const [sourceLang, setSourceLang] = useState("id"); 
+  const [targetLang, setTargetLang] = useState("en"); 
+  const [mode, setMode] = useState("llama"); // "llama", "gemma", atau "compare"
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [isLocalLoading, setIsLocalLoading] = useState(false);
   const chatEndRef = useRef(null);
 
   const isLoading = isLlmLoading || isLocalLoading;
+
+  // Render obrolan sesuai dengan model yang sedang aktif
+  const activeMessages = mode === "llama" 
+    ? llamaMessages 
+    : mode === "gemma" 
+      ? gemmaMessages 
+      : compareMessages;
 
   const [guestCount, setGuestCount] = useState(() => {
     if (user) return 0;
@@ -45,9 +56,15 @@ export default function TranslationChat() {
     }
   }, [user]);
 
+  // Gulir otomatis layar chat jika ada pesan baru
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+  }, [activeMessages, mode]);
+
+  // FITUR UTAMA: Bersihkan total apa pun teks yang sedang diketik ketika klik pindah tab model
+  useEffect(() => {
+    setInput(""); 
+  }, [mode]);
 
   const isGuest = !user;
   const remaining = isGuest ? GUEST_LIMIT - guestCount : Infinity;
@@ -64,22 +81,17 @@ export default function TranslationChat() {
     return newCount;
   }
 
-  // === FUNGSI DETEKSI KONTEKS OTOMATIS: LUWES & PINTAR ===
   function isConversational(text) {
     const txt = text.toLowerCase().trim();
     const wordCount = txt.split(/\s+/).length;
 
-    // 1. Cek jika mengandung kata kunci sapaan dasar atau pencarian identitas Flingo
     const chatKeywords = [
       "halo", "hai", "hello", "hi", "haloo", "helo", "apa kabar", "kamu siapa", 
       "siapa", "nama", "pengembang", "pembuat", "terima kasih", "thanks", "makasih", "test"
     ];
     const hasKeyword = chatKeywords.some(keyword => txt.includes(keyword));
-
-    // 2. Jika kalimatnya pendek (di bawah 4 kata) dan TIDAK mengandung kata perintah translasi formal
     const isShortQuery = wordCount < 4 && !txt.includes("terjemahkan") && !txt.includes("translate") && !txt.includes("penerjemahan");
 
-    // Jika salah satu dari kondisi di atas terpenuhi, maka masuk Chat Mode
     return hasKeyword || isShortQuery;
   }
 
@@ -100,58 +112,73 @@ export default function TranslationChat() {
       text: currentInput,
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     };
-    setMessages((prev) => [...prev, userMsg]);
-    setInput("");
 
+    // Salurkan pesan user ke model yang sedang aktif
+    if (mode === "llama") setLlamaMessages((prev) => [...prev, userMsg]);
+    if (mode === "gemma") setGemmaMessages((prev) => [...prev, userMsg]);
+    if (mode === "compare") setCompareMessages((prev) => [...prev, userMsg]);
+
+    setInput("");
     if (isGuest) incrementGuestCount();
 
     try {
-      // PERCABANGAN LOGIKA: Memisahkan Chat Mode dan Translation Mode secara bersih
-      if (isConversational(currentInput)) {
-        setIsLocalLoading(true);
-        const result = await chatWithFlingo(currentInput);
-        const botMsg = {
-          id: Date.now() + 1,
-          isUser: false,
-          text: result.translation,
-          model: "Flingo",
-          // explanation: "Respons percakapan umum berbasis default Bahasa Indonesia.",
-          timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
-        };
-        setMessages((prev) => [...prev, botMsg]);
-        setIsLocalLoading(false);
-      } else if (mode === "compare") {
+      // MODE COMPARE
+      if (mode === "compare") {
         const result = await translateBothModels(currentInput, sourceLang, targetLang);
         const botMsg = {
           id: Date.now() + 1, isUser: false, isComparison: true,
           llamaResult: result.llama, gemmaResult: result.gemma, comparison: result.comparison,
           sourceText: currentInput, timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         };
-        setMessages((prev) => [...prev, botMsg]);
+        setCompareMessages((prev) => [...prev, botMsg]);
         if (user) saveTranslation({ userId: user.id, sourceLang, targetLang, inputText: currentInput, llamaOutput: result.llama?.translation, gemmaOutput: result.gemma?.translation, selectedModel: "compare" }).catch(console.error);
-      } else {
-        const result = await translateText(currentInput, sourceLang, targetLang, mode);
+      } 
+      // MODE LLAMA MURNI
+      else if (mode === "llama") {
+        if (isConversational(currentInput)) {
+          setIsLocalLoading(true);
+          const result = await chatWithFlingo(currentInput);
+          const botMsg = {
+            id: Date.now() + 1, isUser: false, text: result.translation || result, model: "Flingo LLaMA Chatbot",
+            timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          };
+          setLlamaMessages((prev) => [...prev, botMsg]);
+          setIsLocalLoading(false);
+        } else {
+          const result = await translateText(currentInput, sourceLang, targetLang, "llama");
+          const botMsg = {
+            id: Date.now() + 1, isUser: false, text: result.translation, model: "Flingo LLaMA Translasi",
+            timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          };
+          setLlamaMessages((prev) => [...prev, botMsg]);
+          if (user) saveTranslation({ userId: user.id, sourceLang, targetLang, inputText: currentInput, llamaOutput: result.translation, gemmaOutput: null, selectedModel: "llama" }).catch(console.error);
+        }
+      } 
+      // MODE GEMMA MURNI
+      else if (mode === "gemma") {
+        const result = await translateText(currentInput, sourceLang, targetLang, "gemma");
         const botMsg = {
-          id: Date.now() + 1, isUser: false, text: result.translation, model: result.model,
-          // explanation: result.explanation, 
+          id: Date.now() + 1, isUser: false, text: result.translation, model: "Flingo Gemma Engine",
           timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         };
-        setMessages((prev) => [...prev, botMsg]);
-        if (user) saveTranslation({ userId: user.id, sourceLang, targetLang, inputText: currentInput, llamaOutput: mode === "llama" ? result.translation : null, gemmaOutput: mode === "gemma" ? result.translation : null, selectedModel: mode }).catch(console.error);
+        setGemmaMessages((prev) => [...prev, botMsg]);
+        if (user) saveTranslation({ userId: user.id, sourceLang, targetLang, inputText: currentInput, llamaOutput: null, gemmaOutput: result.translation, selectedModel: "gemma" }).catch(console.error);
       }
     } catch (err) {
-      setMessages((prev) => [...prev, { id: Date.now() + 1, isUser: false, text: `Error: ${err.message}`, timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) }]);
+      const errorMsg = { id: Date.now() + 1, isUser: false, text: `Error Gateway: ${err.message}`, timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) };
+      if (mode === "llama") setLlamaMessages((prev) => [...prev, errorMsg]);
+      if (mode === "gemma") setGemmaMessages((prev) => [...prev, errorMsg]);
+      if (mode === "compare") setCompareMessages((prev) => [...prev, errorMsg]);
       setIsLocalLoading(false);
     }
   }
 
   const srcLang = getLanguageByCode(sourceLang);
   const tgtLang = getLanguageByCode(targetLang);
-  const translationCount = messages.filter((m) => !m.isUser).length;
+  const totalInteractionsCount = llamaMessages.filter(m => !m.isUser).length + gemmaMessages.filter(m => !m.isUser).length + compareMessages.filter(m => !m.isUser).length;
 
   return (
     <div className="flex h-full relative">
-      {/* Login modal */}
       <AnimatePresence>
         {showLoginModal && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
@@ -171,10 +198,8 @@ export default function TranslationChat() {
         )}
       </AnimatePresence>
 
-      {/* Main chat area */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Header controls */}
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="border-b border-base-300 bg-base-100/80 backdrop-blur-sm px-4 py-3 flex flex-col gap-3">
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="border-b border-b-base-300 bg-base-100/80 backdrop-blur-sm px-4 py-3 flex flex-col gap-3">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <LanguageSelector sourceLang={sourceLang} targetLang={targetLang} onSourceChange={setSourceLang} onTargetChange={setTargetLang} onSwap={handleSwap} />
             <div className="flex items-center gap-2">
@@ -193,52 +218,30 @@ export default function TranslationChat() {
           </div>
         </motion.div>
 
-        {/* Messages */}
         <div className="flex-1 overflow-y-auto px-4 py-4">
-          {messages.length === 0 && (
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="flex flex-col items-center justify-center h-full text-center gap-4">
+          {activeMessages.length === 0 && (
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="flex flex-col items-center justify-center h-full text-center gap-4">
               <motion.span animate={{ y: [0, -8, 0] }} transition={{ duration: 2, repeat: Infinity }} className="text-6xl">💬</motion.span>
               <div>
                 <p className="text-lg font-semibold">
-                  {isGuest ? "Coba Flingo AI Secara Gratis" : "Mulai percakapan bersama Flingo"}
+                  Ruang Obrolan {mode === "llama" ? "Llama 3" : mode === "gemma" ? "Gemma 2" : "Komparasi Model"}
                 </p>
                 <p className="text-sm text-base-content/50 max-w-sm mt-1">
-                  Ketik teks dalam bahasa {srcLang.name} untuk mendapatkan terjemahan instan ke bahasa {tgtLang.name} yang didukung oleh {mode === "compare" ? "Llama 3 & Gemma 3" : mode === "llama" ? "Llama 3" : "Gemma 3"}.
+                  Ketik teks dalam bahasa {srcLang.name} untuk mendapatkan keluaran respons murni di tab khusus {mode === "llama" ? "Llama 3" : mode === "gemma" ? "Gemma 2" : "Dual-Engine Compare"}.
                 </p>
               </div>
-              {isGuest && (
-                <div className="badge badge-outline badge-sm gap-1">
-                  <span>🎁</span> Tersedia {GUEST_LIMIT} kuota gratis uji coba
-                </div>
-              )}
               <div className="flex gap-2 mt-2 flex-wrap justify-center">
-                {["Halo, kamu siapa?", "Saye nak pergi besok", "Where is the restaurant?", "Apa kabar?"].map((sample, i) => (
-                  <motion.button
-                    key={sample}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 + i * 0.1 }}
-                    whileHover={{ scale: 1.05, y: -2 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="btn btn-outline btn-sm"
-                    onClick={() => setInput(sample)}
-                  >
+                {["Halo, kamu siapa?", "Saye nak pergi besok", "Where is the restaurant?"].map((sample) => (
+                  <button key={sample} className="btn btn-outline btn-sm text-xs" onClick={() => setInput(sample)}>
                     {sample}
-                  </motion.button>
+                  </button>
                 ))}
               </div>
-              {!isGuest && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.7 }} className="flex gap-4 mt-4 text-xs text-base-content/40">
-                  <span>🤖 Dual Mesin AI</span>
-                  <span>🌍 3 Bahasa Terintegrasi</span>
-                  <span>♾️ Akses Tak Terbatas</span>
-                </motion.div>
-              )}
             </motion.div>
           )}
 
-          <AnimatePresence>
-            {messages.map((msg) =>
+          <AnimatePresence mode="popLayout">
+            {activeMessages.map((msg) =>
               msg.isComparison ? (
                 <motion.div key={msg.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className="mb-4">
                   <p className="text-xs text-base-content/50 mb-2">Menerjemahkan: "{msg.sourceText}" ({srcLang.flag} → {tgtLang.flag})</p>
@@ -262,7 +265,6 @@ export default function TranslationChat() {
           <div ref={chatEndRef} />
         </div>
 
-        {/* Input bar */}
         <form onSubmit={handleSend} className="border-t border-base-300 bg-base-100/80 backdrop-blur-sm px-4 py-3 flex gap-2">
           <input
             type="text"
@@ -278,81 +280,61 @@ export default function TranslationChat() {
         </form>
       </div>
 
-      {/* Right sidebar — only for authenticated users */}
       <AnimatePresence>
         {user && showHistory && (
-          <motion.aside
-            initial={{ width: 0, opacity: 0 }}
-            animate={{ width: 280, opacity: 1 }}
-            exit={{ width: 0, opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="border-l border-l-base-300 bg-base-100 overflow-hidden flex-shrink-0"
-          >
+          <motion.aside initial={{ width: 0, opacity: 0 }} animate={{ width: 280, opacity: 1 }} exit={{ width: 0, opacity: 0 }} transition={{ duration: 0.3 }} className="border-l border-l-base-300 bg-base-100 overflow-hidden flex-shrink-0">
             <div className="w-[280px] p-4 flex flex-col h-full">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-sm font-bold">Info Sesi</h3>
                 <button className="btn btn-ghost btn-xs btn-circle" onClick={() => setShowHistory(false)}>✕</button>
               </div>
 
-              {/* User stats card */}
               <div className="card bg-gradient-to-br from-primary/5 to-secondary/5 border border-base-300 mb-4">
                 <div className="card-body p-3 gap-2">
                   <div className="flex items-center gap-2">
                     <div className="badge badge-primary badge-sm">Lv {level}</div>
                     <div className="badge badge-ghost badge-sm">⭐ {xp.toLocaleString()} XP</div>
                   </div>
-                  <p className="text-xs text-base-content/50 mt-1">Interaksi sesi ini: <span className="font-bold text-base-content">{translationCount}</span></p>
+                  <p className="text-xs text-base-content/50 mt-1">Interaksi total sesi: <span className="font-bold text-base-content">{totalInteractionsCount}</span></p>
                 </div>
               </div>
 
-              {/* Active models */}
               <div className="mb-4">
                 <p className="text-[10px] uppercase tracking-wider text-base-content/40 font-semibold mb-2">Model Aktif</p>
                 <div className="flex gap-1.5">
                   {mode === "llama" && <div className="badge badge-sm bg-blue-500/10 text-blue-500 border-blue-500/20">🦙 Llama 3</div>}
-                  {mode === "gemma" && <div className="badge badge-sm bg-emerald-500/10 text-emerald-500 border-emerald-500/20">💎 Gemma 3</div>}
+                  {mode === "gemma" && <div className="badge badge-sm bg-emerald-500/10 text-emerald-500 border-emerald-500/20">💎 Gemma 2</div>}
                   {mode === "compare" && (
                     <>
                       <div className="badge badge-sm bg-blue-500/10 text-blue-500 border-blue-500/20">🦙 Llama 3</div>
-                      <div className="badge badge-sm bg-emerald-500/10 text-emerald-500 border-emerald-500/20">💎 Gemma 3</div>
+                      <div className="badge badge-sm bg-emerald-500/10 text-emerald-500 border-emerald-500/20">💎 Gemma 2</div>
                     </>
                   )}
                 </div>
               </div>
 
-              {/* Languages */}
-              <div className="mb-4">
-                <p className="text-[10px] uppercase tracking-wider text-base-content/40 font-semibold mb-2">Bahasa</p>
-                <div className="flex items-center gap-2 text-sm">
-                  <span>{srcLang.flag}</span>
-                  <span className="text-xs">{srcLang.name}</span>
-                  <span className="text-base-content/30">→</span>
-                  <span>{tgtLang.flag}</span>
-                  <span className="text-xs">{tgtLang.name}</span>
-                </div>
-              </div>
-
-              {/* Recent translations */}
               <div className="flex-1 overflow-y-auto">
-                <p className="text-[10px] uppercase tracking-wider text-base-content/40 font-semibold mb-2">Interaksi Terakhir</p>
-                {messages.filter((m) => m.isUser).length === 0 ? (
-                  <p className="text-xs text-base-content/30 text-center py-6">Belum ada aktivitas</p>
+                <p className="text-[10px] uppercase tracking-wider text-base-content/40 font-semibold mb-2">Aktivitas Terakhir di Tab Ini</p>
+                {activeMessages.filter((m) => m.isUser).length === 0 ? (
+                  <p className="text-xs text-base-content/30 text-center py-6">Belum ada aktivitas di model ini</p>
                 ) : (
                   <div className="flex flex-col gap-2">
-                    {messages.filter((m) => m.isUser).slice(-10).reverse().map((msg) => (
-                      <motion.div key={msg.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-base-200 rounded-lg p-2.5 text-xs">
+                    {activeMessages.filter((m) => m.isUser).slice(-5).reverse().map((msg) => (
+                      <div key={msg.id} className="bg-base-200 rounded-lg p-2 text-xs">
                         <p className="truncate font-medium">{msg.text}</p>
-                        <p className="text-base-content/40 mt-0.5">{msg.timestamp}</p>
-                      </motion.div>
+                        <p className="text-[10px] text-base-content/40 mt-0.5">{msg.timestamp}</p>
+                      </div>
                     ))}
                   </div>
                 )}
               </div>
 
-              {/* Quick actions */}
               <div className="border-t border-base-300 pt-3 mt-3 flex flex-col gap-1.5">
-                <button className="btn btn-ghost btn-xs justify-start gap-2" onClick={() => { setMessages([]); }}>🗑️ Bersihkan obrolan</button>
-                <button className="btn btn-ghost btn-xs justify-start gap-2" onClick={() => navigate("/progress")}>📊 Lihat progres</button>
+                <button className="btn btn-ghost btn-xs justify-start gap-2" onClick={() => {
+                  if (mode === "llama") setLlamaMessages([]);
+                  if (mode === "gemma") setGemmaMessages([]);
+                  if (mode === "compare") setCompareMessages([]);
+                }}>🗑️ Bersihkan tab ini</button>
               </div>
             </div>
           </motion.aside>

@@ -1,4 +1,4 @@
-const API_URL = "https://angkykurniawan-glossa2.hf.space/api/chat";
+const API_URL = "https://angkykurniawan-glossa.hf.space/api/chat/gemma";
 
 export async function translateWithGemma(text, sourceLang, targetLang) {
   try {

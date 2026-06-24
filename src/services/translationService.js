@@ -33,7 +33,7 @@ export async function translateWithBoth(text, sourceLangCode, targetLangCode) {
 
   return {
     llama: llama.status === "fulfilled" ? llama.value : { translation: "Error: " + llama.reason?.message, explanation: "", alternatives: [], model: "Llama 3" },
-    gemma: gemma.status === "fulfilled" ? gemma.value : { translation: "Error: " + gemma.reason?.message, explanation: "", alternatives: [], model: "Gemma 3" },
+    gemma: gemma.status === "fulfilled" ? gemma.value : { translation: "Error: " + gemma.reason?.message, explanation: "", alternatives: [], model: "Gemma 2" },
     comparison: compareResults(
       llama.status === "fulfilled" ? llama.value : null,
       gemma.status === "fulfilled" ? gemma.value : null
