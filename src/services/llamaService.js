@@ -1,11 +1,5 @@
-// Mengarahkan URL utama ke endpoint FastAPI Hugging Face Space Flingo Anda
 const API_URL = "https://angkykurniawan-glossa.hf.space/api/chat";
 
-/**
- * 1. FUNGSI UNTUK PERCAKAPAN/OBROLAN SANTAI (CHAT MODE)
- * Digunakan khusus saat pengguna mengetik di kotak pesan biasa (contoh: "Halo", "Kamu siapa?").
- * Menjamin model merespons otomatis dengan kalimat ramah dalam Bahasa Indonesia baku.
- */
 export async function chatWithFlingo(text) {
   try {
     const response = await fetch(API_URL, {
@@ -14,7 +8,7 @@ export async function chatWithFlingo(text) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        message: text // Mengirimkan teks murni tanpa bungkus kalimat perintah terjemahan kaku
+        message: text 
       }),
     });
 
@@ -23,7 +17,6 @@ export async function chatWithFlingo(text) {
     
     return {
       translation: data.reply || "",
-      confidence: 1.0,
       explanation: "Respons percakapan umum berbasis default Bahasa Indonesia.",
       alternatives: [],
       model: "Flingo LLaMA 3 Engine Gateway",
@@ -32,7 +25,6 @@ export async function chatWithFlingo(text) {
     console.error("Detail Eror Percakapan:", error);
     return {
       translation: "Gagal terhubung ke mesin Flingo AI. Pastikan server Hugging Face Space dalam keadaan aktif.",
-      confidence: 0.0,
       explanation: "Terjadi pemutusan transmisi data lokal atau server sedang tidak merespons.",
       alternatives: [],
       model: "Flingo LLaMA 3 Engine Gateway",
@@ -68,7 +60,6 @@ export async function translateWithLlama(text, sourceLang, targetLang) {
 
     return {
       translation: content,
-      confidence: 0.95,
       explanation: "Diproses secara dinamis menggunakan akselerasi arsitektur LLaMA 3 dengan kustom LoRA.",
       alternatives: [],
       model: "Flingo LLaMA 3 Engine Gateway",
@@ -77,7 +68,6 @@ export async function translateWithLlama(text, sourceLang, targetLang) {
     console.error("Detail Eror Frontend Penerjemahan:", error);
     return {
       translation: "Gagal terhubung ke mesin Flingo AI. Pastikan server Hugging Face Space dalam keadaan aktif.",
-      confidence: 0.0,
       explanation: "Terjadi pemutusan transmisi data lokal atau server sedang tidak merespons.",
       alternatives: [],
       model: "Flingo LLaMA 3 Engine Gateway",

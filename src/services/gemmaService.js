@@ -18,7 +18,6 @@ export async function translateWithGemma(text, sourceLang, targetLang) {
     
     return {
       translation: data.reply || "",
-      confidence: 0.95,
       explanation: "Diproses secara dinamis menggunakan arsitektur Tatoeba-Translations Gemma 2.",
       alternatives: [],
       model: "Flingo Gemma Engine Gateway",
@@ -26,7 +25,6 @@ export async function translateWithGemma(text, sourceLang, targetLang) {
   } catch (error) {
     return {
       translation: text,
-      confidence: 0.0,
       explanation: error.message,
       alternatives: [],
       model: "Flingo Gemma Engine Gateway",
