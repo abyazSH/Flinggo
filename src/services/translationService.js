@@ -32,8 +32,8 @@ export async function translateWithBoth(text, sourceLangCode, targetLangCode) {
   ]);
 
   return {
-    llama: llama.status === "fulfilled" ? llama.value : { translation: "Error: " + llama.reason?.message, confidence: 0, explanation: "", alternatives: [], model: "Llama 3" },
-    gemma: gemma.status === "fulfilled" ? gemma.value : { translation: "Error: " + gemma.reason?.message, confidence: 0, explanation: "", alternatives: [], model: "Gemma 3" },
+    llama: llama.status === "fulfilled" ? llama.value : { translation: "Error: " + llama.reason?.message, explanation: "", alternatives: [], model: "Llama 3" },
+    gemma: gemma.status === "fulfilled" ? gemma.value : { translation: "Error: " + gemma.reason?.message, explanation: "", alternatives: [], model: "Gemma 3" },
     comparison: compareResults(
       llama.status === "fulfilled" ? llama.value : null,
       gemma.status === "fulfilled" ? gemma.value : null
@@ -66,7 +66,5 @@ export function compareResults(llamaOutput, gemmaOutput) {
     llamaCharCount: lt.length,
     gemmaCharCount: gt.length,
     wordSimilarity: similarity,
-    llamaConfidence: llamaOutput.confidence,
-    gemmaConfidence: gemmaOutput.confidence,
   };
 }

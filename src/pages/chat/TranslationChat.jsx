@@ -114,9 +114,8 @@ export default function TranslationChat() {
           id: Date.now() + 1,
           isUser: false,
           text: result.translation,
-          model: "Flingo LLaMA 3 Engine",
-          explanation: "Respons percakapan umum berbasis default Bahasa Indonesia.",
-          confidence: 1.0,
+          model: "Flingo",
+          // explanation: "Respons percakapan umum berbasis default Bahasa Indonesia.",
           timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         };
         setMessages((prev) => [...prev, botMsg]);
@@ -134,7 +133,7 @@ export default function TranslationChat() {
         const result = await translateText(currentInput, sourceLang, targetLang, mode);
         const botMsg = {
           id: Date.now() + 1, isUser: false, text: result.translation, model: result.model,
-          explanation: result.explanation, confidence: result.confidence,
+          // explanation: result.explanation, 
           timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         };
         setMessages((prev) => [...prev, botMsg]);
@@ -247,7 +246,7 @@ export default function TranslationChat() {
                 </motion.div>
               ) : (
                 <motion.div key={msg.id} initial={{ opacity: 0, x: msg.isUser ? 20 : -20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0 }}>
-                  <ChatBubble message={{ text: msg.text, model: msg.model, explanation: msg.explanation, confidence: msg.confidence }} isUser={msg.isUser} timestamp={msg.timestamp} />
+                  <ChatBubble message={{ text: msg.text, model: msg.model }} isUser={msg.isUser} timestamp={msg.timestamp} />
                 </motion.div>
               )
             )}
