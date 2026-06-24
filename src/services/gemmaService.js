@@ -1,55 +1,53 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-
-const API_KEY = import.meta.env.VITE_GOOGLE_AI_API_KEY;
-const genAI = new GoogleGenerativeAI(API_KEY);
-
-const SYSTEM_PROMPT = `You are Flingo AI, an expert multilingual translation assistant. 
-Translate text accurately while preserving tone, context, and cultural nuances. 
-Always respond in valid JSON with this structure:
-{
-  "translation": "the translated text",
-  "confidence": 0.0-1.0,
-  "explanation": "brief explanation of translation choices",
-  "alternatives": ["alt1", "alt2"]
-}`;
+const API_URL = "https://angkykurniawan-glossa2.hf.space/api/chat";
 
 export async function translateWithGemma(text, sourceLang, targetLang) {
-  const model = genAI.getGenerativeModel({
-    model: "gemma-3-27b-it",
-    systemInstruction: SYSTEM_PROMPT,
-  });
-
-  const userPrompt = `Translate the following text from ${sourceLang} to ${targetLang}:\n"${text}"\n\nRespond ONLY with valid JSON.`;
-
-  const result = await model.generateContent(userPrompt);
-  const content = result.response.text();
-
   try {
-    const parsed = JSON.parse(content);
+    const formattedSource = String(sourceLang).toUpperCase().strip();
+    const formattedTarget = String(targetLang).toUpperCase().strip();
+    
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: `[SRC: ${formattedSource}] [TGT: ${formattedTarget}] Terjemahin santai: ${text.trim()}`
+      }),
+    });
+
+    if (!response.ok) throw new Error(`Gemma Gateway error: ${response.status}`);
+    const data = await response.json();
+    
     return {
-      translation: parsed.translation || content,
-      confidence: parsed.confidence ?? 0.85,
-      explanation: parsed.explanation || "",
-      alternatives: parsed.alternatives || [],
-      model: "Gemma 3",
-    };
-  } catch {
-    return {
-      translation: content,
-      confidence: 0.8,
-      explanation: "",
+      translation: data.reply || "",
+      confidence: 0.95,
+      explanation: "Diproses secara dinamis menggunakan arsitektur Tatoeba-Translations Gemma 2.",
       alternatives: [],
-      model: "Gemma 3",
+      model: "Flingo Gemma Engine Gateway",
+    };
+  } catch (error) {
+    return {
+      translation: text,
+      confidence: 0.0,
+      explanation: error.message,
+      alternatives: [],
+      model: "Flingo Gemma Engine Gateway",
     };
   }
 }
 
 export async function generateQuizWithGemma(prompt) {
-  const model = genAI.getGenerativeModel({
-    model: "gemma-3-27b-it",
-    systemInstruction: "You generate language learning quiz content. Always respond with valid JSON only, no markdown.",
-  });
+  try {
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: `Hasilkan konten kuis pembelajaran bahasa dalam Bahasa Indonesia berdasarkan instruksi berikut: ${prompt}`
+      }),
+    });
 
-  const result = await model.generateContent(prompt);
-  return result.response.text();
+    if (!response.ok) throw new Error(`Gemma Gateway error: ${response.status}`);
+    const data = await response.json();
+    return data.reply || "";
+  } catch (error) {
+    throw new Error("Gagal memuat konten kuis dari mesin Flingo AI.");
+  }
 }
