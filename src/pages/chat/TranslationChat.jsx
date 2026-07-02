@@ -61,7 +61,7 @@ export default function TranslationChat() {
     chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [activeMessages, mode]);
 
-  // FITUR UTAMA: Bersihkan total apa pun teks yang sedang diketik ketika klik pindah tab model
+  // Bersihkan total apa pun teks yang sedang diketik ketika klik pindah tab model
   useEffect(() => {
     setInput(""); 
   }, [mode]);
@@ -122,18 +122,20 @@ export default function TranslationChat() {
     if (isGuest) incrementGuestCount();
 
     try {
-      // MODE COMPARE
+      // 1. MODE COMPARE (Disesuaikan untuk membandingkan LLaMA Asli dengan LLaMA Fallback Mock)
       if (mode === "compare") {
         const result = await translateBothModels(currentInput, sourceLang, targetLang);
         const botMsg = {
           id: Date.now() + 1, isUser: false, isComparison: true,
-          llamaResult: result.llama, gemmaResult: result.gemma, comparison: result.comparison,
+          llamaResult: result.llama, 
+          gemmaResult: result.gemma, // Berisi mock text terarah dari translationService Anda
+          comparison: result.comparison,
           sourceText: currentInput, timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         };
         setCompareMessages((prev) => [...prev, botMsg]);
-        if (user) saveTranslation({ userId: user.id, sourceLang, targetLang, inputText: currentInput, llamaOutput: result.llama?.translation, gemmaOutput: result.gemma?.translation, selectedModel: "compare" }).catch(console.error);
+        if (user) saveTranslation({ userId: user.id, sourceLang, targetLang, inputText: currentInput, llamaOutput: result.llama?.translation, gemmaOutput: "[Gemma Deprecated]", selectedModel: "compare" }).catch(console.error);
       } 
-      // MODE LLAMA MURNI
+      // 2. MODE LLAMA MURNI (Tetap Berjalan Normal Mengarah ke Glossa Engine)
       else if (mode === "llama") {
         if (isConversational(currentInput)) {
           setIsLocalLoading(true);
@@ -154,15 +156,19 @@ export default function TranslationChat() {
           if (user) saveTranslation({ userId: user.id, sourceLang, targetLang, inputText: currentInput, llamaOutput: result.translation, gemmaOutput: null, selectedModel: "llama" }).catch(console.error);
         }
       } 
-      // MODE GEMMA MURNI
+      // 3. MODE GEMMA MURNI (Otomatis Dialihkan ke LLaMA agar User Tetap Mendapatkan Hasil Terjemahan)
       else if (mode === "gemma") {
-        const result = await translateText(currentInput, sourceLang, targetLang, "gemma");
+        setIsLocalLoading(true);
+        const result = await translateText(currentInput, sourceLang, targetLang, "llama");
         const botMsg = {
-          id: Date.now() + 1, isUser: false, text: result.translation, model: "Flingo Gemma Engine",
+          id: Date.now() + 1, isUser: false, 
+          text: `${result.translation}\n\n*(Catatan: Diproses otomatis via LLaMA Glossa Engine karena Gemma dinonaktifkan)*`, 
+          model: "Flingo LLaMA Fallback Engine",
           timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
         };
         setGemmaMessages((prev) => [...prev, botMsg]);
-        if (user) saveTranslation({ userId: user.id, sourceLang, targetLang, inputText: currentInput, llamaOutput: null, gemmaOutput: result.translation, selectedModel: "gemma" }).catch(console.error);
+        setIsLocalLoading(false);
+        if (user) saveTranslation({ userId: user.id, sourceLang, targetLang, inputText: currentInput, llamaOutput: result.translation, gemmaOutput: null, selectedModel: "gemma" }).catch(console.error);
       }
     } catch (err) {
       const errorMsg = { id: Date.now() + 1, isUser: false, text: `Error Gateway: ${err.message}`, timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) };
@@ -224,7 +230,7 @@ export default function TranslationChat() {
               <motion.span animate={{ y: [0, -8, 0] }} transition={{ duration: 2, repeat: Infinity }} className="text-6xl">💬</motion.span>
               <div>
                 <p className="text-lg font-semibold">
-                  Ruang Obrolan {mode === "llama" ? "Llama 3" : mode === "gemma" ? "Gemma 2" : "Komparasi Model"}
+                  Ruang Obrolan {mode === "llama" ? "Llama 3" : mode === "gemma" ? "Gemma 2 (Beralih ke LLaMA)" : "Komparasi Model"}
                 </p>
                 <p className="text-sm text-base-content/50 max-w-sm mt-1">
                   Ketik teks dalam bahasa {srcLang.name} untuk mendapatkan keluaran respons murni di tab khusus {mode === "llama" ? "Llama 3" : mode === "gemma" ? "Gemma 2" : "Dual-Engine Compare"}.
@@ -303,11 +309,11 @@ export default function TranslationChat() {
                 <p className="text-[10px] uppercase tracking-wider text-base-content/40 font-semibold mb-2">Model Aktif</p>
                 <div className="flex gap-1.5">
                   {mode === "llama" && <div className="badge badge-sm bg-blue-500/10 text-blue-500 border-blue-500/20">🦙 Llama 3</div>}
-                  {mode === "gemma" && <div className="badge badge-sm bg-emerald-500/10 text-emerald-500 border-emerald-500/20">💎 Gemma 2</div>}
+                  {mode === "gemma" && <div className="badge badge-sm bg-amber-500/10 text-amber-500 border-amber-500/20">💎 LLaMA Fallback</div>}
                   {mode === "compare" && (
                     <>
                       <div className="badge badge-sm bg-blue-500/10 text-blue-500 border-blue-500/20">🦙 Llama 3</div>
-                      <div className="badge badge-sm bg-emerald-500/10 text-emerald-500 border-emerald-500/20">💎 Gemma 2</div>
+                      <div className="badge badge-sm bg-gray-500/10 text-gray-500 border-gray-500/20">❌ Gemma Off</div>
                     </>
                   )}
                 </div>

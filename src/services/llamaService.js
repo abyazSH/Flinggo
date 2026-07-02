@@ -1,5 +1,9 @@
 const API_URL = "https://angkykurniawan-glossa.hf.space/api/chat/llama";
 
+/**
+ * 1. FUNGSI CHAT / OBROLAN UMUM
+ * Digunakan untuk menangani percakapan kasual interaktif langsung ke backend gateway.
+ */
 export async function chatWithFlingo(text) {
   try {
     const response = await fetch(API_URL, {
@@ -34,19 +38,22 @@ export async function chatWithFlingo(text) {
 
 /**
  * 2. FUNGSI KHUSUS PENERJEMAHAN (TRANSLATION MODE) - VERSI REKAYASA LONGGAR
- * Menghapus pencegatan kaku lokal agar kalimat instruksi campuran dari pengguna bebas dialirkan 
- * ke backend tanpa terblokir di tingkat antarmuka.
+ * Mempertahankan format instruksi asli. Parameter sourceLang dan targetLang otomatis 
+ * diekstrak di tingkat backend Space (app.py) menggunakan regex.
  */
 export async function translateWithLlama(text, sourceLang, targetLang) {
   try {
-    // Meminta pemrosesan teks langsung ke backend FastAPI Flingo dengan parameter fallback aman
+    // Memastikan jika parameter code bahasa kosong/berupa objek utuh, berikan fallback string aman
+    const src = typeof sourceLang === 'string' ? sourceLang : "id";
+    const tgt = typeof targetLang === 'string' ? targetLang : "en";
+
     const response = await fetch(API_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        message: `Terjemahkan teks berikut dari bahasa ${sourceLang || "id"} ke bahasa ${targetLang || "en"}: "${text}"`
+        message: `Terjemahkan teks berikut dari bahasa ${src} ke bahasa ${tgt}: "${text}"`
       }),
     });
 
@@ -60,7 +67,7 @@ export async function translateWithLlama(text, sourceLang, targetLang) {
 
     return {
       translation: content,
-      explanation: "Diproses secara dinamis menggunakan akselerasi arsitektur LLaMA 3 dengan kustom LoRA.",
+      explanation: "Diproses secara dinamis menggunakan akselerasi arsitektur LLaMA 3 dengan kustom Glossa Model.",
       alternatives: [],
       model: "Flingo LLaMA 3 Engine Gateway",
     };
@@ -77,6 +84,7 @@ export async function translateWithLlama(text, sourceLang, targetLang) {
 
 /**
  * 3. FUNGSI PEMBUAT KONTEN KUIS
+ * Mengirimkan permintaan pembuatan set kuis interaktif ke backend gateway.
  */
 export async function generateQuizWithLlama(prompt) {
   try {

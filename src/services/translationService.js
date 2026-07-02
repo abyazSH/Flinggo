@@ -1,48 +1,58 @@
 import { translateWithLlama } from "./llamaService";
-import { translateWithGemma } from "./gemmaService";
 import { getLanguageName } from "../config/languages";
 
 /**
- * Translate using a single model.
+ * Translate menggunakan satu model (Sekarang sepenuhnya dialihkan ke LLaMA 3 Glossa).
  * @param {string} text
  * @param {string} sourceLangCode - e.g. "en"
  * @param {string} targetLangCode - e.g. "es"
- * @param {"llama"|"gemma"} model
+ * @param {"llama"} model - (Gemma parameter diabaikan/deprecated)
  */
 export async function translate(text, sourceLangCode, targetLangCode, model = "llama") {
   const sourceLang = getLanguageName(sourceLangCode);
   const targetLang = getLanguageName(targetLangCode);
 
-  if (model === "gemma") {
-    return translateWithGemma(text, sourceLang, targetLang);
-  }
+  // Fallback otomatis jika UI masih mengirim string parameter "gemma"
   return translateWithLlama(text, sourceLang, targetLang);
 }
 
 /**
- * Translate using both models in parallel for comparison.
+ * Translate menggunakan LLaMA Glossa Engine (Fungsi pembanding dipertahankan dengan mock data kosong untuk Gemma).
+ * Hal ini dilakukan agar komponen UI perbandingan Anda di React tidak patah atau error.
  */
 export async function translateWithBoth(text, sourceLangCode, targetLangCode) {
   const sourceLang = getLanguageName(sourceLangCode);
   const targetLang = getLanguageName(targetLangCode);
 
-  const [llama, gemma] = await Promise.allSettled([
+  // Hanya memanggil LLaMA service karena Gemma sudah dinonaktifkan di backend
+  const [llama] = await Promise.allSettled([
     translateWithLlama(text, sourceLang, targetLang),
-    translateWithGemma(text, sourceLang, targetLang),
   ]);
 
+  const llamaResult = llama.status === "fulfilled" ? llama.value : { 
+    translation: "Error: " + llama.reason?.message, 
+    explanation: "Gagal terhubung ke gateway.", 
+    alternatives: [], 
+    model: "Flingo LLaMA 3 Engine Gateway" 
+  };
+
+  // Mock respons Gemma sebagai penanda dinonaktifkan agar state UI comparison tetap aman
+  const gemmaResult = { 
+    translation: "[Engine Gemma Dinonaktifkan - Beralih Penuh ke LLaMA Glossa]", 
+    explanation: "Sistem backend bermigrasi ke arsitektur LLaMA tunggal.", 
+    alternatives: [], 
+    model: "Gemma 2 (Deprecated)" 
+  };
+
   return {
-    llama: llama.status === "fulfilled" ? llama.value : { translation: "Error: " + llama.reason?.message, explanation: "", alternatives: [], model: "Llama 3" },
-    gemma: gemma.status === "fulfilled" ? gemma.value : { translation: "Error: " + gemma.reason?.message, explanation: "", alternatives: [], model: "Gemma 2" },
-    comparison: compareResults(
-      llama.status === "fulfilled" ? llama.value : null,
-      gemma.status === "fulfilled" ? gemma.value : null
-    ),
+    llama: llamaResult,
+    gemma: gemmaResult,
+    comparison: compareResults(llamaResult, gemmaResult),
   };
 }
 
 /**
- * Basic comparison metrics between two translation outputs.
+ * Metrik komparasi dasar antara dua output teks terjemahan.
  */
 export function compareResults(llamaOutput, gemmaOutput) {
   if (!llamaOutput || !gemmaOutput) return null;
@@ -50,12 +60,12 @@ export function compareResults(llamaOutput, gemmaOutput) {
   const lt = llamaOutput.translation || "";
   const gt = gemmaOutput.translation || "";
 
-  const llamaWords = lt.split(/\s+/).length;
-  const gemmaWords = gt.split(/\s+/).length;
+  const llamaWords = lt.split(/\s+/).filter(Boolean).length;
+  const gemmaWords = gt.split(/\s+/).filter(Boolean).length;
 
-  // Simple word overlap score (Jaccard-like)
-  const llamaSet = new Set(lt.toLowerCase().split(/\s+/));
-  const gemmaSet = new Set(gt.toLowerCase().split(/\s+/));
+  // Skor overlap kata sederhana (Jaccard-like)
+  const llamaSet = new Set(lt.toLowerCase().split(/\s+/).filter(Boolean));
+  const gemmaSet = new Set(gt.toLowerCase().split(/\s+/).filter(Boolean));
   const intersection = [...llamaSet].filter((w) => gemmaSet.has(w)).length;
   const union = new Set([...llamaSet, ...gemmaSet]).size;
   const similarity = union > 0 ? Math.round((intersection / union) * 100) : 0;
