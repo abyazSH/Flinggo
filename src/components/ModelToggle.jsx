@@ -1,24 +1,19 @@
-const MODES = [
-  { id: "llama",   label: "Llama 3",      icon: "🦙" },
-  { id: "gemma",   label: "Gemma 3",      icon: "💎" },
-  { id: "compare", label: "Compare Both", icon: "⚖️" },
-];
+import { motion } from "framer-motion";
 
-export default function ModelToggle({ mode, onChange }) {
+export default function ModelToggle() {
   return (
-    <div className="join">
-      {MODES.map((m) => (
-        <button
-          key={m.id}
-          className={`join-item btn btn-sm text-xs ${
-            mode === m.id ? "btn-primary" : "btn-outline"
-          }`}
-          onClick={() => onChange(m.id)}
-        >
-          <span>{m.icon}</span>
-          <span className="hidden sm:inline">{m.label}</span>
-        </button>
-      ))}
+    <div className="flex items-center gap-2 bg-primary/10 border border-primary/20 text-primary px-3 py-1.5 rounded-xl shadow-sm">
+      {/* Efek animasi denyut nadi hijau/biru penanda AI aktif */}
+      <span className="relative flex h-2 w-2">
+        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+        <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+      </span>
+      
+      {/* Label Model */}
+      <div className="flex items-center gap-1 text-xs font-bold tracking-wide">
+        <span>🦙</span>
+        <span>Llama 3 Engine</span>
+      </div>
     </div>
   );
 }
