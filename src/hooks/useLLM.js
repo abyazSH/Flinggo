@@ -9,7 +9,6 @@ export function useLLM() {
     setIsLoading(true);
     setError(null);
     try {
-      // Mengirimkan parameter model ("llama" atau "gemma") ke service
       const result = await translate(text, sourceLang, targetLang, model);
       return result;
     } catch (err) {
