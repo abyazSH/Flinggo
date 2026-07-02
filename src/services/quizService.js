@@ -1,5 +1,4 @@
 import { generateQuizWithLlama } from "./llamaService";
-import { generateQuizWithGemma } from "./gemmaService";
 import { getLanguageName } from "../config/languages";
 import { fetchRandomGameContent, fetchRandomChallenge } from "./supabaseService";
 

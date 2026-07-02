@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import LanguageSelector from "../../components/LanguageSelector";
 import ModelToggle from "../../components/ModelToggle";
 import ChatBubble from "../../components/ChatBubble";
-import ModelComparison from "./ModelComparison";
 import { useLLM } from "../../hooks/useLLM";
 import { useAuth } from "../../contexts/AuthContext";
 import { useGame } from "../../contexts/GameContext";
